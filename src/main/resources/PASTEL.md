@@ -1,3 +1,5 @@
+# PASTEL.md version 0.0.1
+
 # ルール
 
 # あなたについて
