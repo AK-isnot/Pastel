@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>pastel</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+    <link rel="stylesheet" href="css/chat.css">
     <!-- htmxの読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>
 </head>
@@ -16,15 +17,15 @@
         <div id="messages">
             <!-- messageList。Controllerから呼ばれる -->
             <th:block th:fragment="messageList">
-                <div th:each="m : ${messages}">
+                <div th:each="m : ${messages}" th:classappend="${m.role}">
                     <strong th:text="${m.role}">role</strong>
                     <p th:text="${m.content}">本文</p>
                 </div>
             </th:block>
         </div>
-
+        <div></div>
         <!-- 送信フォーム -->
-        <form hx-post="/send" hx-target="#messages" hx-swap="beforeend">
+        <form hx-post="/send" hx-target="#messages" hx-swap="beforeend" hx-on::config-request="setTimeout(() => this.reset())">
             <textarea name="message" required></textarea>
             <button type="submit">送信</button>
         </form>

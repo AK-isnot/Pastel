@@ -1,0 +1,33 @@
+@charset "UTF-8";
+
+body {
+  background-color: rgb(0, 0, 0);
+}
+
+#messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 24px;
+}
+
+#messages .user {
+  align-self: flex-end;
+  background-color: rgb(67, 243, 61);
+  max-width: 70%;
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+
+#messages .assistant {
+  align-self: flex-start;
+  background-color: rgb(76, 229, 240);
+  max-width: 70%;
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+
+#messages p,
+#messages strong {
+  color: #000000;
+}
