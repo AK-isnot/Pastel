@@ -20,7 +20,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
 
-import com.akisnot.pastel.PastelMessage;
+import com.akisnot.pastel.DTO.PastelMessage;
 import com.akisnot.pastel.Repository.MessageRepository;
 
 @Service
@@ -51,7 +51,7 @@ public class ChatService {
         DateTimeFormatter f1 = DateTimeFormatter.ofPattern("yyyy年M月d日E曜日 H時m分", Locale.JAPANESE);
 
         // 履歴の取得
-        List<PastelMessage> history = messageRepository.getRecentHistory(20);
+        List<PastelMessage> history = getHistory(20);
 
         // 履歴をつなげて渡す
         List<Message> messages = new ArrayList<>();
@@ -84,6 +84,11 @@ public class ChatService {
         // 返却
         return content;
 
+    }
+
+    // 履歴の返却メソッド
+    public List<PastelMessage> getHistory(int numberOfHistory) {
+        return messageRepository.getRecentHistory(numberOfHistory);
     }
 
 }

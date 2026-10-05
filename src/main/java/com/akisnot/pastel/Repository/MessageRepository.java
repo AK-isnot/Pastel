@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import com.akisnot.pastel.PastelMessage;
+import com.akisnot.pastel.DTO.PastelMessage;
 
 @Repository
 public class MessageRepository {

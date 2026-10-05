@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>pastel</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+</head>
+
+<body>
+    <main>
+        <div th:each="m:${messages}">
+            <strong th:text="${m.role}">role</strong>
+            <p th:text="${m.content}">本文</p>
+        </div>
+    </main>
+</body>
+
+</html>

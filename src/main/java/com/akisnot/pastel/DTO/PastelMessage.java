@@ -1,4 +1,4 @@
-package com.akisnot.pastel;
+package com.akisnot.pastel.DTO;
 
 import org.stringtemplate.v4.compiler.CodeGenerator.region_return;
 
