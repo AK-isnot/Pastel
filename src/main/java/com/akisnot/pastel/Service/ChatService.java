@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -39,7 +40,7 @@ public class ChatService {
             WebSearchTavily webSearchTavily) {
         this.messageRepository = messageRepository;
         this.chatClient = chatClientBuilder.defaultTools(webSearchTavily).build();
-        this.webSearchTavily=webSearchTavily;
+        this.webSearchTavily = webSearchTavily;
     }
 
     public String chat(String inputText) {
@@ -65,17 +66,29 @@ public class ChatService {
         List<Message> messages = new ArrayList<>();
         messages.add(new SystemMessage(pastelMd + "\n現在時刻: " + nowDateTime.format(f1)));
         for (PastelMessage m : history) {
-            messages.add(m.role().equals("user")
-                    ? new UserMessage(m.content())
-                    : new AssistantMessage(m.content()));
+            if (m.role().equals("user")) {
+                messages.add(new UserMessage(m.content()));
+            } else {
+                if (m.searchQueries() == null) {
+                    messages.add(new AssistantMessage(m.content()));
+                } else {
+                    messages.add(
+                            new AssistantMessage(m.content() + "\n［システム記録：この返事の前に" + m.searchQueries() + "で検索した］"));
+                }
+
+            }
         }
         messages.add(new UserMessage(inputText));
 
         // 送信内容の保存
         messageRepository.save(PastelMessage.makeOfUser(inputText, pastelMdVersion));
 
+        // ぱすてるが検索した場合の検索文字列を受け取るリスト
+        List<String> searchQueries = new ArrayList<>();
+
         // 送信
-        ChatResponse response = chatClient.prompt(new Prompt(messages)).call().chatResponse();
+        ChatResponse response = chatClient.prompt(new Prompt(messages)).toolContext(Map.of("queries", searchQueries))
+                .call().chatResponse();
 
         // 返却内容の保存
         // 返却本文
@@ -86,9 +99,19 @@ public class ChatService {
         Usage usage = response.getMetadata().getUsage();
         Integer promptTokens = usage.getPromptTokens(); // 入力
         Integer completionTokens = usage.getCompletionTokens(); // 出力
-        // 保存処理
-        messageRepository
-                .save(PastelMessage.makeOfAssistant(content, promptTokens, completionTokens, model, pastelMdVersion));
+
+        // ぱすてるが検索をしたかで分岐する
+        if (searchQueries.isEmpty()) {
+            // 保存処理（検索がなかった場合）
+            messageRepository
+                    .save(PastelMessage.makeOfAssistant(content, promptTokens, completionTokens, model,
+                            pastelMdVersion, null));
+        } else {
+            // 保存処理（検索があった場合）
+            messageRepository
+                    .save(PastelMessage.makeOfAssistant(content, promptTokens, completionTokens, model,
+                            pastelMdVersion, searchQueries.toString()));
+        }
 
         // 返却
         return content;

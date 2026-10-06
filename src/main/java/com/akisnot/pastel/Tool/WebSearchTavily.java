@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +25,7 @@ public class WebSearchTavily {
     public record SearchResultsList(List<SearchResult> results) {
     }
 
-    //ロガー
+    // ロガー
     private static final Logger log = LoggerFactory.getLogger(WebSearchTavily.class);
 
     // コンストラクタが最初に呼ばれるのでapikeyの受け取りは引数でやる
@@ -34,7 +35,7 @@ public class WebSearchTavily {
     }
 
     @Tool(description = "webを検索して、関連するページの情報を返します。調べたい事、調べてと指示されたこと、興味のある事を検索するときに使用します")
-    public SearchResultsList webSearch(@ToolParam(description = "検索する言葉") String query) {
+    public SearchResultsList webSearch(@ToolParam(description = "検索する言葉") String query, ToolContext toolContext) {
         // 送信
         // SearchResultsList=List<SearchResult> searchResultsList
         // つまり複数の検索結果をまとめて一つのクラスで受け取ってると理解
@@ -45,7 +46,11 @@ public class WebSearchTavily {
                 .retrieve()
                 .body(SearchResultsList.class);
 
-        //ぱすてるが何を検索したかログに出す
+        // Serviceから引数のtoolContextを通して渡ってくるsearchQueriesに検索した内容を足す？
+        List<String> searchQueries = (List<String>) toolContext.getContext().get("queries");
+        searchQueries.add(query);
+
+        // ぱすてるが何を検索したかログに出す
         log.info("Tavily検索: query={}", query);
 
         return searchResultsList;
