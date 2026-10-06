@@ -18,6 +18,7 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.akisnot.pastel.DTO.PastelMessage;
@@ -25,6 +26,9 @@ import com.akisnot.pastel.Repository.MessageRepository;
 
 @Service
 public class ChatService {
+
+    @Value("${pastel.md-version}")
+    private String pastelMdVersion;
 
     private final MessageRepository messageRepository;
     private final ChatModel chatModel;
@@ -64,14 +68,14 @@ public class ChatService {
         messages.add(new UserMessage(inputText));
 
         // 送信内容の保存
-        messageRepository.save(PastelMessage.makeOfUser(inputText));
+        messageRepository.save(PastelMessage.makeOfUser(inputText, pastelMdVersion));
 
         // 送信
         ChatResponse response = chatModel.call(new Prompt(messages));
 
         // 返却内容の保存
         // 返却本文
-        String content = response.getResult().getOutput().getText();
+        String content = response.getResults().getLast().getOutput().getText();
         // 使ったモデル
         String model = response.getMetadata().getModel();
         // トークン使用量
@@ -79,7 +83,8 @@ public class ChatService {
         Integer promptTokens = usage.getPromptTokens(); // 入力
         Integer completionTokens = usage.getCompletionTokens(); // 出力
         // 保存処理
-        messageRepository.save(PastelMessage.makeOfAssistant(content, promptTokens, completionTokens, model));
+        messageRepository
+                .save(PastelMessage.makeOfAssistant(content, promptTokens, completionTokens, model, pastelMdVersion));
 
         // 返却
         return content;

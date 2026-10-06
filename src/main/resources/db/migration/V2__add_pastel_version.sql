@@ -1,0 +1,1 @@
+ALTER TABLE messages ADD COLUMN pastel_version VARCHAR(50) NOT NULL DEFAULT '';

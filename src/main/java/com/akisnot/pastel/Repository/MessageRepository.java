@@ -39,10 +39,10 @@ public class MessageRepository {
         jdbcClient.sql("""
                 INSERT INTO messages (
                     user_id, message_id, role, content,
-                    input_tokens, output_tokens, use_model
+                    input_tokens, output_tokens, use_model, pastel_version
                 ) VALUES (
                     :userId, :messageId, :role, :content,
-                    :inputTokens, :outputTokens, :useModel
+                    :inputTokens, :outputTokens, :useModel, :pastelVersion
                 )
                 """)
                 .paramSource(insertData)
