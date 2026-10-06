@@ -40,9 +40,9 @@ public class ScheduledResearch {
     private static final Logger log = LoggerFactory.getLogger(ScheduledResearch.class);
 
     // 調べものの指示
-    private static final String order = "自由に調べものをしてください、気になったことを調べましょう。調べた結果はメモに残してください。これはあなた用のメモなので分量は自由に、書き留めておきたいだけ書きましょう";
+    private static final String order = "自由に調べものをしてください、気になったことを調べましょう。残しておきたい事はwriteでメモに残してください。これはあなた用のメモなので分量は自由に、書き留めておきたいだけ書きましょう";
 
-    @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
+    //@Scheduled(initialDelay=1, fixedRate = 1, timeUnit = TimeUnit.HOURS)
     public void webResearch() {
 
         // PASTEL.md読み込み
@@ -53,6 +53,8 @@ public class ScheduledResearch {
             log.error("PASTEL.mdの読み込みに失敗しました", e);
             return;
         } 
+
+        pastelMd=pastelMd+"\n今はあなたの自由時間です。オーナーはここにいません。この後に届くメッセージはオーナーからではなく、システムからの合図です。あなたの返事は誰にも読まれません。";
 
         // 送信
         ChatResponse response = chatClient.prompt().system(pastelMd).user(order).toolContext(Map.of("queries", new ArrayList<>()))

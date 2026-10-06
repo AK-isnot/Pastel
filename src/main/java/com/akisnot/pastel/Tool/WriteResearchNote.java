@@ -32,7 +32,9 @@ public class WriteResearchNote {
     private static final Logger log = LoggerFactory.getLogger(WriteResearchNote.class);
 
     @Tool(description = "WEBを調べた結果、記録しておきたいことを記録します。ファイルを開いて、書き込み保存することが出来ます")
-    public String write(@ToolParam(description = "ファイル名になる短い見出し。30文字以内") String title, String body) {
+    public String write(
+        @ToolParam(description = "ファイル名になる短い見出し。30文字以内。[[ ]] や記号は使わない") String title, 
+        @ToolParam(description = "メモの本文。Markdownで書く") String body) {
         // ファイル名を作成する（yyyy-MM-dd_HHmm_見出し.md）
         // 現在時刻取得
         ZonedDateTime nowDateTime = ZonedDateTime.now(ZoneId.of("Asia/Tokyo"));
