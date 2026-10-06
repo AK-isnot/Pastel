@@ -10,14 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import org.springframework.ai.anthropic.AnthropicChatOptions;
-import org.springframework.ai.anthropic.AnthropicWebSearchTool;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import com.akisnot.pastel.DTO.PastelMessage;
 import com.akisnot.pastel.Repository.MessageRepository;
+import com.akisnot.pastel.Tool.WebSearchTavily;
 
 @Service
 public class ChatService {
@@ -33,11 +32,14 @@ public class ChatService {
     private String pastelMdVersion;
 
     private final MessageRepository messageRepository;
-    private final ChatModel chatModel;
+    private final ChatClient chatClient;
+    private final WebSearchTavily webSearchTavily;
 
-    public ChatService(MessageRepository messageRepository, ChatModel chatModel) {
+    public ChatService(MessageRepository messageRepository, ChatClient.Builder chatClientBuilder,
+            WebSearchTavily webSearchTavily) {
         this.messageRepository = messageRepository;
-        this.chatModel = chatModel;
+        this.chatClient = chatClientBuilder.defaultTools(webSearchTavily).build();
+        this.webSearchTavily=webSearchTavily;
     }
 
     public String chat(String inputText) {
@@ -73,7 +75,7 @@ public class ChatService {
         messageRepository.save(PastelMessage.makeOfUser(inputText, pastelMdVersion));
 
         // 送信
-        ChatResponse response = chatModel.call(new Prompt(messages));
+        ChatResponse response = chatClient.prompt(new Prompt(messages)).call().chatResponse();
 
         // 返却内容の保存
         // 返却本文
