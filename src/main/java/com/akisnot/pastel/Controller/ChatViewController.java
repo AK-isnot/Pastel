@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import com.akisnot.pastel.DTO.PastelMessage;
 import com.akisnot.pastel.Service.ChatService;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller

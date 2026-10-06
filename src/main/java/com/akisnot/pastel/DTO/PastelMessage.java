@@ -1,7 +1,5 @@
 package com.akisnot.pastel.DTO;
 
-import org.springframework.beans.factory.annotation.Value;
-
 import com.github.f4b6a3.ulid.Ulid;
 import com.github.f4b6a3.ulid.UlidCreator;
 
