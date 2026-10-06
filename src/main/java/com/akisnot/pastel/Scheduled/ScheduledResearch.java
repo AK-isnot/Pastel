@@ -25,7 +25,7 @@ public class ScheduledResearch {
     private final WebSearchTavily webSearchTavily;
     private final WriteResearchNote writeResearchNote;
 
-    public ScheduledResearch(MessageRepository messageRepository, ChatClient.Builder chatClientBuilder,
+    public ScheduledResearch(ChatClient.Builder chatClientBuilder,
             WebSearchTavily webSearchTavily, WriteResearchNote writeResearchNote) {
         this.chatClient = chatClientBuilder.defaultTools(webSearchTavily, writeResearchNote).build();
         this.webSearchTavily = webSearchTavily;
