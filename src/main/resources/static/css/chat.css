@@ -27,6 +27,10 @@ body {
   border-radius: 12px;
 }
 
+#messages p {
+  white-space: pre-wrap;
+}
+
 #messages p,
 #messages strong {
   color: #000000;
