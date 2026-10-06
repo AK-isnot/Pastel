@@ -13,7 +13,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import com.akisnot.pastel.Repository.MessageRepository;
 import com.akisnot.pastel.Service.ChatService;
 import com.akisnot.pastel.Tool.WebSearchTavily;
 import com.akisnot.pastel.Tool.WriteResearchNote;
@@ -21,16 +20,12 @@ import com.akisnot.pastel.Tool.WriteResearchNote;
 @Configuration
 @EnableScheduling
 public class ScheduledResearch {
+
     private final ChatClient chatClient;
-    private final WebSearchTavily webSearchTavily;
-    private final WriteResearchNote writeResearchNote;
 
     public ScheduledResearch(ChatClient.Builder chatClientBuilder,
             WebSearchTavily webSearchTavily, WriteResearchNote writeResearchNote) {
         this.chatClient = chatClientBuilder.defaultTools(webSearchTavily, writeResearchNote).build();
-        this.webSearchTavily = webSearchTavily;
-        this.writeResearchNote = writeResearchNote;
-
     }
 
     // ロガー

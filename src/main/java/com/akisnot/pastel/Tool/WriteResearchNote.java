@@ -29,7 +29,7 @@ public class WriteResearchNote {
     // ロガー
     private static final Logger log = LoggerFactory.getLogger(WriteResearchNote.class);
 
-    @Tool(description = "WEBを調べた結果、記録しておきたいことを記録しまするために、新しいメモを作ります")
+    @Tool(description = "WEBを調べた結果、記録しておきたいことを記録するために、新しいメモを作ります")
     public String writeResearchNote(
         @ToolParam(description = "ファイル名になる短い見出し。30文字以内。[[ ]] や記号は使わない") String title, 
         @ToolParam(description = "メモの本文。Markdownで書く") String body) {

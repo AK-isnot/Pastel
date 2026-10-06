@@ -47,6 +47,7 @@ public class WebSearchTavily {
                 .body(SearchResultsList.class);
 
         // Serviceから引数のtoolContextを通して渡ってくるsearchQueriesに検索した内容を足す？
+        @SuppressWarnings("unchecked")
         List<String> searchQueries = (List<String>) toolContext.getContext().get("queries");
         searchQueries.add(query);
 

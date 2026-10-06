@@ -34,13 +34,11 @@ public class ChatService {
 
     private final MessageRepository messageRepository;
     private final ChatClient chatClient;
-    private final WebSearchTavily webSearchTavily;
 
     public ChatService(MessageRepository messageRepository, ChatClient.Builder chatClientBuilder,
             WebSearchTavily webSearchTavily) {
         this.messageRepository = messageRepository;
         this.chatClient = chatClientBuilder.defaultTools(webSearchTavily).build();
-        this.webSearchTavily = webSearchTavily;
     }
 
     public String chat(String inputText) {
