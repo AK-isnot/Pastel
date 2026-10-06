@@ -34,6 +34,14 @@ public class WriteResearchNote {
         @ToolParam(description = "ファイル名になる短い見出し。30文字以内。[[ ]] や記号は使わない") String title, 
         @ToolParam(description = "メモの本文。Markdownで書く") String body) {
 
+        //titleからファイル名に使えない文字（記号と制御文字）を省く
+        title=title.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "");
+
+        //titleが30文字を超えていたら切る
+        if(title.length()>30){
+            title=title.substring(0,30);
+        }
+
         // ファイル名を作成する（yyyy-MM-dd_HHmm_見出し.md）
         // 現在時刻取得
         ZonedDateTime nowDateTime = ZonedDateTime.now(ZoneId.of("Asia/Tokyo"));
