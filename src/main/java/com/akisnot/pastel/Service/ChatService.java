@@ -3,6 +3,7 @@ package com.akisnot.pastel.Service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import com.akisnot.pastel.DTO.PastelMessage;
 import com.akisnot.pastel.Repository.MessageRepository;
+import com.akisnot.pastel.Repository.VaultRepository;
 import com.akisnot.pastel.Tool.WebSearchTavily;
 
 @Service
@@ -31,14 +33,18 @@ public class ChatService {
 
     @Value("${pastel.md-version}")
     private String pastelMdVersion;
+    @Value("${pastel.vault.memory-dir}")
+    private String pastelMemoryDir;
 
     private final MessageRepository messageRepository;
     private final ChatClient chatClient;
+    private final VaultRepository vaultRepository;
 
     public ChatService(MessageRepository messageRepository, ChatClient.Builder chatClientBuilder,
-            WebSearchTavily webSearchTavily) {
+            WebSearchTavily webSearchTavily, VaultRepository vaultRepository) {
         this.messageRepository = messageRepository;
         this.chatClient = chatClientBuilder.defaultTools(webSearchTavily).build();
+        this.vaultRepository = vaultRepository;
     }
 
     public String chat(String inputText) {
@@ -48,9 +54,9 @@ public class ChatService {
         try (InputStream in = ChatService.class.getResourceAsStream("/PASTEL.md")) {
             pastelMd = new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            return "ERROR: failed to load PASTEL.md:";
+            return "ERROR: failed to load PASTEL.md.";
         } catch (Exception e) {
-            return "An unexpected error occurred.";
+            return "ERROR: An unexpected error occurred.";
         }
 
         // 現在時刻取得
@@ -60,9 +66,18 @@ public class ChatService {
         // 履歴の取得
         List<PastelMessage> history = getHistory(20);
 
+        // メモリの取得
+        String memory;
+        try {
+            memory = vaultRepository.readVaultMemoryFile(Path.of(pastelMemoryDir));
+        } catch (IOException e) {
+            return "ERROR: failed to load memory files.";
+        }
+
         // 履歴をつなげて渡す
         List<Message> messages = new ArrayList<>();
         messages.add(new SystemMessage(pastelMd + "\n現在時刻: " + nowDateTime.format(f1)));
+        messages.add(new SystemMessage(memory));
         for (PastelMessage m : history) {
             if (m.role().equals("user")) {
                 messages.add(new UserMessage(m.content()));
