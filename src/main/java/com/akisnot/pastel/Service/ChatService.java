@@ -37,6 +37,8 @@ public class ChatService {
     private String pastelMdVersion;
     @Value("${pastel.vault.memory-dir}")
     private String pastelMemoryDir;
+    @Value("${pastel.vault.research-dir}")
+    private String pastelResearchDir;
 
     private final MessageRepository messageRepository;
     private final ChatClient chatClient;
@@ -86,10 +88,19 @@ public class ChatService {
             return "ERROR: failed to load memory files.";
         }
 
+        // 調べたことの取得
+        String reserchIndex;
+        try {
+            reserchIndex = vaultRepository.getFolderFileList(Path.of(pastelResearchDir), ".md");
+        } catch (IOException e) {
+            return "ERROR: failed to load reserch files.";
+        }
+
         // 履歴をつなげて渡す
         List<Message> messages = new ArrayList<>();
         messages.add(new SystemMessage(pastelMd + "\n現在時刻: " + nowDateTime.format(f1)));
         messages.add(new SystemMessage(memory));
+        messages.add(new SystemMessage("# 調べものメモ\n" + reserchIndex));
         for (PastelMessage m : history) {
             if (m.role().equals("user")) {
                 messages.add(new UserMessage(m.content()));
@@ -120,7 +131,7 @@ public class ChatService {
         String content = response.getResults().getLast().getOutput().getText();
         // 整形：［システム記録］以下を削除する
         content = content.replaceAll("［システム記録.*", "");
-        
+
         // 使ったモデル
         String model = response.getMetadata().getModel();
         // トークン使用量

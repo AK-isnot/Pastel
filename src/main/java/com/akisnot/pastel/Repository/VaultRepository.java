@@ -38,7 +38,6 @@ public class VaultRepository {
         for (Path p : fileList) {
             // ファイルを読む
             String content = Files.readString(p);
-            log.info("読んだファイル:{}", p);
 
             // タグ作成
             String firstTag;
@@ -62,5 +61,36 @@ public class VaultRepository {
 
         return readResults;
 
+    }
+
+    // 指定したフォルダの配下のファイルを返す
+    // 出力例
+    // sampleA
+    // sampleB
+    // ...
+    public String getFolderFileList(Path folderPath,String suffix) throws IOException {
+        // 引数のディレクトリに何のファイルがあるかを調べる
+        // Files::isRegularFileで通常ファイルだけ取得する
+        List<Path> fileList;
+        try (var stream = Files.list(folderPath)) {
+            fileList = stream
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(".md"))
+                    .toList();
+        }
+
+        // 整形
+        String result = "";
+        for (Path p : fileList) {
+            //ファイル名（拡張子なしにする）
+            String filename=p.getFileName().toString();
+            if (filename.endsWith(suffix)) {
+                filename = filename.substring(0, filename.length() - suffix.length()); 
+            }
+
+            result = result + p.toString() + "\n";
+        }
+
+        return result;
     }
 }
