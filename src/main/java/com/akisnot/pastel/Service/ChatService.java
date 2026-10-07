@@ -27,6 +27,7 @@ import com.akisnot.pastel.DTO.PastelMessage;
 import com.akisnot.pastel.Repository.MessageRepository;
 import com.akisnot.pastel.Repository.VaultRepository;
 import com.akisnot.pastel.Tool.WebSearchTavily;
+import com.akisnot.pastel.Tool.WriteMemoryNote;
 
 @Service
 public class ChatService {
@@ -41,9 +42,9 @@ public class ChatService {
     private final VaultRepository vaultRepository;
 
     public ChatService(MessageRepository messageRepository, ChatClient.Builder chatClientBuilder,
-            WebSearchTavily webSearchTavily, VaultRepository vaultRepository) {
+            WebSearchTavily webSearchTavily, VaultRepository vaultRepository,WriteMemoryNote writeMemoryNote) {
         this.messageRepository = messageRepository;
-        this.chatClient = chatClientBuilder.defaultTools(webSearchTavily).build();
+        this.chatClient = chatClientBuilder.defaultTools(webSearchTavily,writeMemoryNote).build();
         this.vaultRepository = vaultRepository;
     }
 

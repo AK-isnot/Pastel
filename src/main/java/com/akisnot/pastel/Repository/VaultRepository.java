@@ -28,7 +28,7 @@ public class VaultRepository {
         try (var stream = Files.list(folderPath)) {
             fileList = stream
                     .filter(Files::isRegularFile)
-                    .filter(p->p.getFileName().toString().endsWith(".md"))
+                    .filter(p -> p.getFileName().toString().endsWith(".md"))
                     .toList();
         }
 
@@ -41,7 +41,12 @@ public class VaultRepository {
             log.info("読んだファイル:{}", p);
 
             // タグ作成
-            String firstTag = "<memory name=\"" + p.getFileName() + "\">\n";
+            String firstTag;
+            String filename = p.getFileName().toString();
+            if (filename.endsWith(".md")) {
+                filename = filename.substring(0, filename.length() - 3); // "sample"
+            }
+            firstTag = "<memory name=\"" + filename + "\">\n";
             String lastTag = "</memory>\n";
 
             // タグ追加
