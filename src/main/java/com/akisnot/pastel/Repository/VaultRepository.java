@@ -68,7 +68,7 @@ public class VaultRepository {
     // sampleA
     // sampleB
     // ...
-    public String getFolderFileList(Path folderPath,String suffix) throws IOException {
+    public String getFolderFileList(Path folderPath, String suffix) throws IOException {
         // 引数のディレクトリに何のファイルがあるかを調べる
         // Files::isRegularFileで通常ファイルだけ取得する
         List<Path> fileList;
@@ -82,13 +82,13 @@ public class VaultRepository {
         // 整形
         String result = "";
         for (Path p : fileList) {
-            //ファイル名（拡張子なしにする）
-            String filename=p.getFileName().toString();
+            // ファイル名（拡張子なしにする）
+            String filename = p.getFileName().toString();
             if (filename.endsWith(suffix)) {
-                filename = filename.substring(0, filename.length() - suffix.length()); 
+                filename = filename.substring(0, filename.length() - suffix.length());
             }
 
-            result = result + p.toString() + "\n";
+            result = result + filename + "\n";
         }
 
         return result;

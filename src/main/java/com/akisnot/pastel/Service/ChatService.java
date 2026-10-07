@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import com.akisnot.pastel.DTO.PastelMessage;
 import com.akisnot.pastel.Repository.MessageRepository;
 import com.akisnot.pastel.Repository.VaultRepository;
+import com.akisnot.pastel.Tool.ReadResearchNote;
 import com.akisnot.pastel.Tool.WebSearchTavily;
 import com.akisnot.pastel.Tool.WriteMemoryNote;
 import com.akisnot.pastel.Tool.WriteResearchNote;
@@ -50,13 +51,15 @@ public class ChatService {
             WebSearchTavily webSearchTavily,
             VaultRepository vaultRepository,
             WriteMemoryNote writeMemoryNote,
-            WriteResearchNote writeResearchNote) {
+            WriteResearchNote writeResearchNote,
+            ReadResearchNote readResearchNote) {
         this.messageRepository = messageRepository;
         this.chatClient = chatClientBuilder
                 .defaultTools(
                         webSearchTavily,
                         writeMemoryNote,
-                        writeResearchNote)
+                        writeResearchNote,
+                        readResearchNote)
                 .build();
         this.vaultRepository = vaultRepository;
     }
@@ -89,18 +92,18 @@ public class ChatService {
         }
 
         // 調べたことの取得
-        String reserchIndex;
+        String researchIndex;
         try {
-            reserchIndex = vaultRepository.getFolderFileList(Path.of(pastelResearchDir), ".md");
+            researchIndex = vaultRepository.getFolderFileList(Path.of(pastelResearchDir), ".md");
         } catch (IOException e) {
-            return "ERROR: failed to load reserch files.";
+            return "ERROR: failed to load research files.";
         }
 
         // 履歴をつなげて渡す
         List<Message> messages = new ArrayList<>();
         messages.add(new SystemMessage(pastelMd + "\n現在時刻: " + nowDateTime.format(f1)));
         messages.add(new SystemMessage(memory));
-        messages.add(new SystemMessage("# 調べものメモ\n" + reserchIndex));
+        messages.add(new SystemMessage("# 調べものメモ\n" + researchIndex));
         for (PastelMessage m : history) {
             if (m.role().equals("user")) {
                 messages.add(new UserMessage(m.content()));
