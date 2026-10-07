@@ -47,3 +47,6 @@ command.txt
 
 # pastelとの会話ログ
 data/
+
+# pastelのモデル
+*.vrm
