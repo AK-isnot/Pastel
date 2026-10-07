@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.springframework.ai.anthropic.AnthropicCacheOptions;
+import org.springframework.ai.anthropic.AnthropicCacheStrategy;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -58,11 +61,20 @@ public class ChatService {
             ReadResearchNote readResearchNote) {
         this.messageRepository = messageRepository;
         this.chatClient = chatClientBuilder
+                // @toolの設定
                 .defaultTools(
                         webSearchTavily,
                         writeMemoryNote,
                         writeResearchNote,
                         readResearchNote)
+                // キャッシュの設定
+                .defaultOptions(
+                        AnthropicChatOptions
+                                .builder()
+                                .cacheOptions(
+                                        AnthropicCacheOptions.builder()
+                                                .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+                                                .cacheToolResults(true).multiBlockSystemCaching(true).build()))
                 .build();
         this.vaultRepository = vaultRepository;
     }
@@ -102,20 +114,23 @@ public class ChatService {
             return "ERROR: failed to load research files.";
         }
 
-        // 履歴をつなげて渡す
+        // システムメッセージとして情報を渡す
         List<Message> messages = new ArrayList<>();
-        messages.add(new SystemMessage(pastelMd + "\n現在時刻: " + nowDateTime.format(f1)));
+        //pastel.mdを渡す
+        messages.add(new SystemMessage(pastelMd));
+        //取得したメモリを渡す
         messages.add(new SystemMessage(memory));
+        //調べものメモのファイル名の一覧を渡す
         messages.add(new SystemMessage("# 調べものメモ\n" + researchIndex));
 
         // 前回の会話からどれだけの時間が経ったのか計算してプロンプトに含める
         // 最後の会話時間をUlidから計算するために、履歴から取得する
         String lastMessageUlidString = history.getLast().messageId();
-
         // 初回は前回の会話の時間が存在しないので分岐する
+        String statusText;
         if (lastMessageUlidString.isEmpty()) {
-            messages.add(new SystemMessage("# これが初めての起動です\n"));
-        } else if (!lastMessageUlidString.isEmpty()) {
+            statusText = "これが初めての起動です\n";
+        } else {
             Ulid lastMessageUlid = Ulid.from(lastMessageUlidString);
             Instant lastMessageTime = lastMessageUlid.getInstant();
             // 今回の時間と前回の時間で引き算をして、どれだけ時間が経ったか計算する
@@ -125,9 +140,12 @@ public class ChatService {
                             elapsedTime.toDays(),
                             elapsedTime.toHoursPart(),
                             elapsedTime.toMinutesPart());
-            messages.add(new SystemMessage("# 前回の会話から\n" + elapsedTimeString + "経過しました"));
+            statusText = "前回の会話から" + elapsedTimeString + "経過しました";
         }
+        //今の状況（現在時刻、前回の会話からどれだけ時間が経ったか）を渡す
+        messages.add(new SystemMessage("# 今の状況\n" + "現在時刻：" + nowDateTime.format(f1) + "\n" + statusText));
 
+        //会話履歴をまとめて、システムメッセージに渡す
         for (PastelMessage m : history) {
             if (m.role().equals("user")) {
                 messages.add(new UserMessage(m.content()));
