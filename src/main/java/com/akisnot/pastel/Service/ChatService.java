@@ -28,6 +28,7 @@ import com.akisnot.pastel.Repository.MessageRepository;
 import com.akisnot.pastel.Repository.VaultRepository;
 import com.akisnot.pastel.Tool.WebSearchTavily;
 import com.akisnot.pastel.Tool.WriteMemoryNote;
+import com.akisnot.pastel.Tool.WriteResearchNote;
 
 @Service
 public class ChatService {
@@ -41,10 +42,20 @@ public class ChatService {
     private final ChatClient chatClient;
     private final VaultRepository vaultRepository;
 
-    public ChatService(MessageRepository messageRepository, ChatClient.Builder chatClientBuilder,
-            WebSearchTavily webSearchTavily, VaultRepository vaultRepository,WriteMemoryNote writeMemoryNote) {
+    public ChatService(
+            MessageRepository messageRepository,
+            ChatClient.Builder chatClientBuilder,
+            WebSearchTavily webSearchTavily,
+            VaultRepository vaultRepository,
+            WriteMemoryNote writeMemoryNote,
+            WriteResearchNote writeResearchNote) {
         this.messageRepository = messageRepository;
-        this.chatClient = chatClientBuilder.defaultTools(webSearchTavily,writeMemoryNote).build();
+        this.chatClient = chatClientBuilder
+                .defaultTools(
+                        webSearchTavily,
+                        writeMemoryNote,
+                        writeResearchNote)
+                .build();
         this.vaultRepository = vaultRepository;
     }
 
@@ -107,6 +118,9 @@ public class ChatService {
         // 返却内容の保存
         // 返却本文
         String content = response.getResults().getLast().getOutput().getText();
+        // 整形：［システム記録］以下を削除する
+        content = content.replaceAll("［システム記録.*", "");
+        
         // 使ったモデル
         String model = response.getMetadata().getModel();
         // トークン使用量

@@ -24,7 +24,7 @@ public class WriteMemoryNote {
     // ロガー
     private static final Logger log = LoggerFactory.getLogger(WriteMemoryNote.class);
 
-    @Tool(description = "会話をしていく中で、あなたが覚えておきたいと思ったこと、オーナーが覚えて欲しいと指示したことを記録します。同じ見出しのファイルは丸ごと置き換わります。更新するときは、残したい内容も含めて全文を書いてください")
+    @Tool(description = "会話をしていく中で、あなたが覚えておきたいと思ったこと、オーナーが覚えて欲しいと指示したことを記録します。同じ見出しのファイルは丸ごと置き換わります。更新するときは、残したい内容も含めて全文を書いてください。調べたことや知識はここに書かないでください。調べものメモのほうに書きましょう")
     public String writeMemoryNote(
             @ToolParam(description = "書き込むファイルの名称。30文字以内。更新するときは # メモリ に出ているのと同じ名前にしてください。拡張子は付けずに中身が変わっても使い続けられる短い見出しにしましょう") String title,
             @ToolParam(description = "メモの本文。Markdownで書く") String body) {
