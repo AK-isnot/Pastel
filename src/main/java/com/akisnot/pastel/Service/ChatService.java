@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -30,6 +32,7 @@ import com.akisnot.pastel.Tool.ReadResearchNote;
 import com.akisnot.pastel.Tool.WebSearchTavily;
 import com.akisnot.pastel.Tool.WriteMemoryNote;
 import com.akisnot.pastel.Tool.WriteResearchNote;
+import com.github.f4b6a3.ulid.Ulid;
 
 @Service
 public class ChatService {
@@ -104,6 +107,27 @@ public class ChatService {
         messages.add(new SystemMessage(pastelMd + "\n現在時刻: " + nowDateTime.format(f1)));
         messages.add(new SystemMessage(memory));
         messages.add(new SystemMessage("# 調べものメモ\n" + researchIndex));
+
+        // 前回の会話からどれだけの時間が経ったのか計算してプロンプトに含める
+        // 最後の会話時間をUlidから計算するために、履歴から取得する
+        String lastMessageUlidString = history.getLast().messageId();
+
+        // 初回は前回の会話の時間が存在しないので分岐する
+        if (lastMessageUlidString.isEmpty()) {
+            messages.add(new SystemMessage("# これが初めての起動です\n"));
+        } else if (!lastMessageUlidString.isEmpty()) {
+            Ulid lastMessageUlid = Ulid.from(lastMessageUlidString);
+            Instant lastMessageTime = lastMessageUlid.getInstant();
+            // 今回の時間と前回の時間で引き算をして、どれだけ時間が経ったか計算する
+            Duration elapsedTime = Duration.between(lastMessageTime, nowDateTime);
+            String elapsedTimeString = String
+                    .format("%d日%d時間%d分",
+                            elapsedTime.toDays(),
+                            elapsedTime.toHoursPart(),
+                            elapsedTime.toMinutesPart());
+            messages.add(new SystemMessage("# 前回の会話から\n" + elapsedTimeString + "経過しました"));
+        }
+
         for (PastelMessage m : history) {
             if (m.role().equals("user")) {
                 messages.add(new UserMessage(m.content()));
