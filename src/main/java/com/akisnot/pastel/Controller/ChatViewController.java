@@ -34,11 +34,20 @@ public class ChatViewController {
 
     @PostMapping("/send")
     public String send(@RequestParam("message") String message, Model model) {
+        // 画面に渡す
+        model.addAttribute("message", message);
+
+        // chat.html内のpendingの部品だけ返す
+        return "chat :: pending";
+    }
+
+    @PostMapping("/reply")
+    public String reply(@RequestParam("message") String message, Model model) {
         // pastelと会話
         chatService.chat(message);
 
         // 会話した分を取得
-        List<PastelMessage> history = chatService.getHistory(2);
+        List<PastelMessage> history = chatService.getHistory(1);
 
         // 画面に渡す
         model.addAttribute("messages", history);
@@ -46,5 +55,4 @@ public class ChatViewController {
         // chat.html内のmessageListの部品だけ返す
         return "chat :: messageList";
     }
-
 }
