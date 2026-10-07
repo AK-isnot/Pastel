@@ -3,7 +3,10 @@ package com.akisnot.pastel.Repository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,5 +95,52 @@ public class VaultRepository {
         }
 
         return result;
+    }
+
+    // [[ (キーワード) ]]形式のキーワードを用いて関連するメモを返す
+    // # つながっているメモ：（キーワード）
+    // - 2026-10-06_2124_眠りと乾眠のこと
+    // - 2026-10-07_1142_夢とレム睡眠で脳に起きていること
+    public String searchHaveKeywordFiles(Path folderPath, String keyword, String filename) throws IOException {
+        // 引数のディレクトリに何のファイルがあるかを調べる
+        List<Path> fileList;
+        try (var stream = Files.list(folderPath)) {
+            fileList = stream
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(".md"))
+                    .toList();
+        }
+
+        // キーワードが含まれるファイルをリスト化する
+        List<Path> haveKeywordfileList = new ArrayList<>();
+        Pattern pattern = Pattern.compile("\\[\\[" + Pattern.quote(keyword) + "\\]\\]");
+        for (Path p : fileList) {
+            // ファイルを読む
+            String content = Files.readString(p);
+
+            // キーワードが含まれるかを確認する
+            // かつそのファイルが、読んだファイルの場合ははじく
+            Matcher m = pattern.matcher(content);
+            if (m.find()) {
+                if (!filename.equals(p.getFileName().toString())) {
+                    haveKeywordfileList.add(p);
+                }
+
+            }
+        }
+
+        // キーワードが含まれなかった場合には空文字を返す
+        if (haveKeywordfileList.isEmpty()) {
+            return "";
+        }
+
+        // 整形して返却する
+        String result = "# つながっているメモ：" + keyword + "\n";
+        for (Path p : haveKeywordfileList) {
+            result = result + "- " + p.getFileName().toString() + "\n";
+        }
+
+        return result;
+
     }
 }
