@@ -93,4 +93,4 @@ faviconはClaudeに作成させた画像です。
 
 ## 関連
 
-- Qiitaの記事：（公開後にリンクを追加）
+- Qiitaの記事：https://qiita.com/AK-isnot/items/62847f1242cc5bac0b63
