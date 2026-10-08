@@ -83,7 +83,7 @@ public class WriteResearchNote {
             // DB保存
             toolCallsRepository.save(ToolCalls.make(messageId,
                     "writeResearchNote", fileName, 0));
-            log.error("保存に失敗しました：" + e.getMessage());
+            log.error("保存に失敗しました：{}", title, e);
             return "保存に失敗しました：" + e.getMessage();
         }
 

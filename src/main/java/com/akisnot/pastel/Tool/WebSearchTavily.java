@@ -110,12 +110,14 @@ public class WebSearchTavily {
         } catch (RestClientException e) {
             toolCallsRepository.save(ToolCalls.make(messageId,
                     "readWebPage", url, 0));
+            log.error("ページを読めませんでした：{}", url, e);
             return "ページを読めませんでした";
         }
 
         if (extractResultList.results.isEmpty()) {
             toolCallsRepository.save(ToolCalls.make(messageId,
                     "readWebPage", url, 0));
+            log.error("ページを読めませんでした：{}", url);
             return "ページを読めませんでした";
         }
 

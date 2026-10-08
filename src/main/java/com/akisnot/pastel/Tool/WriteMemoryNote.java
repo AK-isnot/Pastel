@@ -73,7 +73,7 @@ public class WriteMemoryNote {
 
             return "保存に成功しました：" + title;
         } catch (IOException e) {
-            log.error("保存に失敗しました：" + e.getMessage());
+            log.error("保存に失敗しました：{}", title, e);
 
             // DB保存
             toolCallsRepository.save(ToolCalls.make(messageId,

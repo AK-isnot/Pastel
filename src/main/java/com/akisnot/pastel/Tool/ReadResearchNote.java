@@ -69,6 +69,7 @@ public class ReadResearchNote {
         } catch (IOException e) {
             toolCallsRepository.save(ToolCalls.make(messageId,
                     "readResearchNote", filename, 0));
+            log.error("読み出しに失敗しました：{}", filename, e);
             return "読み出しに失敗しました" + filename;
         }
 
@@ -97,6 +98,7 @@ public class ReadResearchNote {
             } catch (IOException e) {
                 toolCallsRepository.save(ToolCalls.make(messageId,
                         "readResearchNote", filename, 0));
+                log.error("関連するメモの検索に失敗しました：{}", filename, e);
                 return "関連するメモの検索に失敗しました。本文は取得できました。ファイルの本文：" + content;
             }
 
