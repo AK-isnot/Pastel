@@ -96,6 +96,9 @@ clock.start();
 let timeUntilBlink = 3;   // 次のまばたきまでの残り秒
 let blinkRemaining = 0;   // 目を閉じている残り秒
 
+let breathProgress = 0;   // 今の呼吸がどこまで進んだか（0〜1）
+let breathSeconds = 4;    // 今の呼吸の長さ（秒）
+
 function animate() {
 
     requestAnimationFrame(animate);
@@ -103,20 +106,33 @@ function animate() {
 
     // update vrm components
     if (currentVrm) {
+
+        //呼吸
+        //今の状態を前のフレームから経った分だけ進める
+        breathProgress += deltaTime / breathSeconds;
+        //１回の呼吸が終わったら次の呼吸の長さを決め直す
+        if (breathProgress >= 1) {
+            breathProgress -= 1;
+            breathSeconds = 3 + Math.random() * 2;
+        }
+        //胸のボーンを取ってうごかす
+        const chest = currentVrm.humanoid.getNormalizedBoneNode("chest");
+        chest.rotation.x = Math.sin(breathProgress * Math.PI * 2) * 0.02;
+
+        //瞬き
         // 両方の残り秒から、経過秒を引く
         timeUntilBlink -= deltaTime;
         blinkRemaining -= deltaTime;
-
         // 次のまばたきの時間が来たら、目を閉じて、次の間隔を決め直す
         if (timeUntilBlink <= 0) {
             blinkRemaining = 0.1;
             timeUntilBlink = 2 + Math.random() * 4;
         }
-
         // 閉じている残りがあれば1（閉じる）、なければ0（開く）
         currentVrm.expressionManager.setValue('blink', blinkRemaining > 0 ? 1 : 0);
 
-        currentVrm.update(clock.getDelta());
+        //モデルに反映する処理
+        currentVrm.update(deltaTime);
     }
 
     // render
