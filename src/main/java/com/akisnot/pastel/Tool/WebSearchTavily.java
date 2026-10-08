@@ -31,6 +31,12 @@ public class WebSearchTavily {
     public record SearchResultsList(List<SearchResult> results) {
     }
 
+    public record ExtractResult(String url, String raw_content) {
+    }
+
+    public record ExtractResultList(List<ExtractResult> results) {
+    }
+
     // ロガー
     private static final Logger log = LoggerFactory.getLogger(WebSearchTavily.class);
 
@@ -42,7 +48,9 @@ public class WebSearchTavily {
     }
 
     @Tool(description = "webを検索して、関連するページの情報を返します。調べたい事、調べてと指示されたこと、興味のある事を検索するときに使用します")
-    public SearchResultsList webSearch(@ToolParam(description = "検索する言葉") String query, ToolContext toolContext) {
+    public SearchResultsList webSearch(
+            @ToolParam(description = "検索する言葉") String query,
+            ToolContext toolContext) {
         // serviceから伝わってくるmessageId
         String messageId = (String) toolContext.getContext().get("messageId");
 
@@ -73,11 +81,52 @@ public class WebSearchTavily {
         // ぱすてるが何を検索したかログに出す
         log.info("Tavily検索: query={}", query);
 
-        //DB保存
+        // DB保存
         toolCallsRepository.save(ToolCalls.make(messageId,
-                    "webSearch", query, 1));
+                "webSearch", query, 1));
 
         return searchResultsList;
     }
 
+    @Tool(description = "webサイトを指定して読むことが出来ます。さらに知りたいことを指定しておくことで、それに関連した情報が返却されます。urlはwebSearchの結果に出たURLをそのまま入れてください")
+    public String readWebPage(
+            @ToolParam(description = "知りたいこと") String query,
+            @ToolParam(description = "閲覧するURL") String url,
+            ToolContext toolContext) {
+        // serviceから伝わってくるmessageId
+        String messageId = (String) toolContext.getContext().get("messageId");
+
+        // 送信
+        ExtractResultList extractResultList;
+        try {
+
+            extractResultList = restClient
+                    .post()
+                    .uri("/extract")
+                    .body(Map.of("query", query, "urls", url, "chunks_per_source", 5))
+                    .retrieve()
+                    .body(ExtractResultList.class);
+
+        } catch (RestClientException e) {
+            toolCallsRepository.save(ToolCalls.make(messageId,
+                    "readWebPage", url, 0));
+            return "ページを読めませんでした";
+        }
+
+        if (extractResultList.results.isEmpty()) {
+            toolCallsRepository.save(ToolCalls.make(messageId,
+                    "readWebPage", url, 0));
+            return "ページを読めませんでした";
+        }
+
+        // ぱすてるが何を検索したかログに出す
+        log.info("Tavily検索: query={} url={}", query, url);
+
+        // DB保存
+        toolCallsRepository.save(ToolCalls.make(messageId,
+                "readWebPage", url, 1));
+
+        // 結果
+        return "ページの本文：" + extractResultList.results.getFirst().raw_content;
+    }
 }

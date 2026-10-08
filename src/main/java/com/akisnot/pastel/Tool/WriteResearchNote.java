@@ -40,7 +40,7 @@ public class WriteResearchNote {
 
     @Tool(description = "WEBを調べた結果、記録しておきたいことを記録するために、新しいメモを作ります")
     public String writeResearchNote(
-            @ToolParam(description = "ファイル名になる短い見出し。30文字以内。[[ ]] や記号は使わない") String title,
+            @ToolParam(description = "ファイル名になる短い見出し。30文字以内。[[ ]] や記号は使わない。日付は自動で付くので、見出しだけ入れてください") String title,
             @ToolParam(description = "メモの本文。Markdownで書く") String body, ToolContext toolContext) {
 
         // serviceから伝わってくるmessageId
