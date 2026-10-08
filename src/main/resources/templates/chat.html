@@ -9,54 +9,78 @@
     <link rel="stylesheet" href="css/chat.css">
     <!-- faviconの読み込み -->
     <link rel="icon" type="image/png" href="img/favicon.png">
+    <!-- manifestのよみこみ -->
+    <link rel="manifest" href="manifest.json">
     <!-- htmxの読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>
+    <!--VRMを動かすのに必要なもののインポート-->
+    <script type="importmap">
+			{
+				"imports": {
+					"three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+					"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+					"@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.min.js"
+				}
+			}
+	</script>
+    <script type="module" src="/js/avatar.js"></script>
 </head>
 
 <body>
-    <main class="main max-w-2xl mx-auto p-4">
+
+    <main class="main max-w-7xl mx-auto p-4">
         <h1 class="text-2xl font-bold md-4 ">Pastel developing now</h1>
-        <!-- 履歴 -->
-        <div id="messages">
-            <!-- messageList。Controllerから呼ばれる -->
-            <th:block th:fragment="messageList">
-                <div th:each="m : ${messages}">
-                    <!-- 自分の発言は右 -->
-                    <div th:if="${m.role == 'user'}" class="chat chat-end">
-                        <div class="chat-header">オーナー</div>
-                        <div class="chat-bubble chat-bubble-primary whitespace-pre-wrap" th:text="${m.content}">本文</div>
-                    </div>
-                    <!-- パステルの発言は左 -->
-                    <div th:if="${m.role == 'assistant'}" class="chat chat-start">
-                        <div class="chat-header">ぱすてる</div>
-                        <div class="chat-bubble chat-bubble-secondary whitespace-pre-wrap" th:text="${m.content}">本文
+        <div class="flex">
+            <!--ぱすてるの表示キャンバス-->
+            <canvas id="pastel-canvas" class="sticky top-1/2 self-start"></canvas>
+            <div class="flex-1">
+                <!-- 履歴 -->
+                <div id="messages">
+                    <!-- messageList。Controllerから呼ばれる -->
+                    <th:block th:fragment="messageList">
+                        <div th:each="m : ${messages}">
+                            <!-- 自分の発言は右 -->
+                            <div th:if="${m.role == 'user'}" class="chat chat-end">
+                                <div class="chat-header">オーナー</div>
+                                <div class="chat-bubble chat-bubble-primary whitespace-pre-wrap" th:text="${m.content}">
+                                    本文
+                                </div>
+                            </div>
+                            <!-- パステルの発言は左 -->
+                            <div th:if="${m.role == 'assistant'}" class="chat chat-start">
+                                <div class="chat-header">ぱすてる</div>
+                                <div class="chat-bubble chat-bubble-secondary whitespace-pre-wrap"
+                                    th:text="${m.content}">本文
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </th:block>
+                    <!-- pending。送信した直後に/sendから呼ばれる -->
+                    <th:block th:fragment="pending" th:if="${message != null}">
+                        <!-- 自分の発言 -->
+                        <div class="chat chat-end">
+                            <div class="chat-header">オーナー</div>
+                            <div class="chat-bubble chat-bubble-primary whitespace-pre-wrap" th:text="${message}">本文
+                            </div>
+                        </div>
+                        <!-- 考え中。画面に出たら/replyに送って、ぱすてるの返事と入れ替わる -->
+                        <div class="chat chat-start" hx-post="/reply" hx-trigger="load"
+                            hx-swap="outerHTML show:window:bottom" hx-include="find input">
+                            <input type="hidden" name="message" th:value="${message}">
+                            <div class="chat-header">ぱすてる</div>
+                            <div class="chat-bubble chat-bubble-secondary">考え中…</div>
+                        </div>
+                    </th:block>
                 </div>
-            </th:block>
-            <!-- pending。送信した直後に/sendから呼ばれる -->
-            <th:block th:fragment="pending" th:if="${message != null}">
-                <!-- 自分の発言 -->
-                <div class="chat chat-end">
-                    <div class="chat-header">オーナー</div>
-                    <div class="chat-bubble chat-bubble-primary whitespace-pre-wrap" th:text="${message}">本文</div>
-                </div>
-                <!-- 考え中。画面に出たら/replyに送って、ぱすてるの返事と入れ替わる -->
-                <div class="chat chat-start" hx-post="/reply" hx-trigger="load" hx-swap="outerHTML show:window:bottom"
-                    hx-include="find input">
-                    <input type="hidden" name="message" th:value="${message}">
-                    <div class="chat-header">ぱすてる</div>
-                    <div class="chat-bubble chat-bubble-secondary">考え中…</div>
-                </div>
-            </th:block>
+                <div></div>
+                <!-- 送信フォーム -->
+                <form hx-post="/send" hx-target="#messages" hx-swap="beforeend show:window:bottom"
+                    hx-on::config-request="setTimeout(() => this.reset())" class="flex items-end sticky bottom-0">
+                    <textarea name="message" required class="textarea flex-1 color-base-100"></textarea>
+                    <button type="submit" class="btn btn-primary">送信</button>
+                </form>
+            </div>
         </div>
-        <div></div>
-        <!-- 送信フォーム -->
-        <form hx-post="/send" hx-target="#messages" hx-swap="beforeend show:window:bottom"
-            hx-on::config-request="setTimeout(() => this.reset())" class="flex items-end sticky bottom-0">
-            <textarea name="message" required class="textarea flex-1 color-base-100"></textarea>
-            <button type="submit" class="btn btn-primary">送信</button>
-        </form>
     </main>
     <script>window.scrollTo(0, document.body.scrollHeight);</script>
 </body>
