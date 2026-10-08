@@ -88,7 +88,7 @@ public class WebSearchTavily {
         return searchResultsList;
     }
 
-    @Tool(description = "webサイトを指定して読むことが出来ます。さらに知りたいことを指定しておくことで、それに関連した情報が返却されます。urlはwebSearchの結果に出たURLをそのまま入れてください")
+    @Tool(description = "webサイトを指定して読むことが出来ます。知りたいことを指定しておくことで、ページの全文ではなくそれに関連した情報が抜粋されて返却されます。urlはwebSearchの結果に出たURLをそのまま入れてください")
     public String readWebPage(
             @ToolParam(description = "知りたいこと") String query,
             @ToolParam(description = "閲覧するURL") String url,
@@ -127,6 +127,6 @@ public class WebSearchTavily {
                 "readWebPage", url, 1));
 
         // 結果
-        return "ページの本文：" + extractResultList.results.getFirst().raw_content;
+        return "ページのうち、知りたいことに関係する部分の抜粋（全文ではありません）：" + extractResultList.results.getFirst().raw_content;
     }
 }
