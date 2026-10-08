@@ -70,6 +70,15 @@ loader.load(
 
         currentVrm = vrm;
 
+        //カメラの方を見る
+        vrm.lookAt.target = camera;
+
+        // すこし笑顔
+        vrm.expressionManager.setValue('relaxed', 0.3);
+
+        //ちょっと首をかしげる
+        vrm.humanoid.getNormalizedBoneNode('head').rotation.z = 0.08;
+
         //左腕の操作
         vrm.humanoid.getNormalizedBoneNode('leftUpperArm').rotation.z = -1.1;
 
@@ -99,6 +108,9 @@ let blinkRemaining = 0;   // 目を閉じている残り秒
 let breathProgress = 0;   // 今の呼吸がどこまで進んだか（0〜1）
 let breathSeconds = 4;    // 今の呼吸の長さ（秒）
 
+let swayingProgress = 0;   // 今の揺れがどこまで進んだか（0〜1）
+let swayingSeconds = 9;    // 今の揺れの周期（秒）
+
 function animate() {
 
     requestAnimationFrame(animate);
@@ -106,6 +118,18 @@ function animate() {
 
     // update vrm components
     if (currentVrm) {
+
+        //体を左右にランダムに揺らす（揺れと表記）
+        //今の状態を前のフレームから経った分だけ進める
+        swayingProgress += deltaTime / swayingSeconds;
+        //１回の揺れが終わったら次の呼吸の長さを決め直す
+        if (swayingProgress >= 1) {
+            swayingProgress -= 1;
+            swayingSeconds = 8 + Math.random() * 2;
+        }
+        //腰のボーンを取ってうごかす
+        const spine = currentVrm.humanoid.getNormalizedBoneNode("spine");
+        spine.rotation.z = Math.sin(swayingProgress * Math.PI * 2) * 0.015;
 
         //呼吸
         //今の状態を前のフレームから経った分だけ進める
