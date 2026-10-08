@@ -167,13 +167,15 @@ public class ChatService {
         messages.add(new UserMessage(inputText));
 
         // 送信内容の保存
-        messageRepository.save(Messages.makeOfUser(inputText, pastelMdVersion));
+        Messages ownerSaveValue = Messages.makeOfUser(inputText, pastelMdVersion);
+        messageRepository.save(ownerSaveValue);
 
         // ぱすてるが検索した場合の検索文字列を受け取るリスト
         List<String> searchQueries = new ArrayList<>();
 
         // 送信
-        ChatResponse response = chatClient.prompt(new Prompt(messages)).toolContext(Map.of("queries", searchQueries))
+        ChatResponse response = chatClient.prompt(new Prompt(messages))
+                .toolContext(Map.of("queries", searchQueries,"messageId", ownerSaveValue.messageId()))
                 .call().chatResponse();
 
         // 返却内容の保存

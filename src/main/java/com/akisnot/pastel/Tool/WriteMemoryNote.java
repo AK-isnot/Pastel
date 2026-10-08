@@ -7,18 +7,27 @@ import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.akisnot.pastel.DTO.ToolCalls;
+import com.akisnot.pastel.Repository.ToolCallsRepository;
+
 @Component
 public class WriteMemoryNote {
+
+    ToolCallsRepository toolCallsRepository;
+
     // memoryのフォルダパス指定
     private final Path folderPath;
 
-    public WriteMemoryNote(@Value("${pastel.vault.memory-dir}") String folderPathString) {
+    public WriteMemoryNote(@Value("${pastel.vault.memory-dir}") String folderPathString,
+            ToolCallsRepository toolCallsRepository) {
         this.folderPath = Paths.get(folderPathString);
+        this.toolCallsRepository = toolCallsRepository;
     }
 
     // ロガー
@@ -27,7 +36,10 @@ public class WriteMemoryNote {
     @Tool(description = "会話をしていく中で、あなたが覚えておきたいと思ったこと、オーナーが覚えて欲しいと指示したことを記録します。同じ見出しのファイルは丸ごと置き換わります。更新するときは、残したい内容も含めて全文を書いてください。調べたことや知識はここに書かないでください。調べものメモのほうに書きましょう")
     public String writeMemoryNote(
             @ToolParam(description = "書き込むファイルの名称。30文字以内。更新するときは # メモリ に出ているのと同じ名前にしてください。拡張子は付けずに中身が変わっても使い続けられる短い見出しにしましょう") String title,
-            @ToolParam(description = "メモの本文。Markdownで書く") String body) {
+            @ToolParam(description = "メモの本文。Markdownで書く") String body,
+            ToolContext toolContext) {
+        // serviceから伝わってくるmessageId
+        String messageId = (String) toolContext.getContext().get("messageId");
 
         // titleからファイル名に使えない文字（記号と制御文字）を省く
         title = title.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "");
@@ -40,7 +52,7 @@ public class WriteMemoryNote {
         // md形式かチェックして、mdでない場合は.mdをつける
         if (!title.endsWith(".md")) {
             title = title + ".md";
-        }    
+        }
 
         try {
             // フォルダ作成
@@ -55,9 +67,18 @@ public class WriteMemoryNote {
             // ぱすてるが何を記録したかログに出す
             log.info("保存したファイル：{}", filePath);
 
+            // DB保存
+            toolCallsRepository.save(ToolCalls.make(messageId,
+                    "writeMemoryNote", title, 1));
+
             return "保存に成功しました：" + title;
         } catch (IOException e) {
             log.error("保存に失敗しました：" + e.getMessage());
+
+            // DB保存
+            toolCallsRepository.save(ToolCalls.make(messageId,
+                    "writeMemoryNote", title, 0));
+
             return "保存に失敗しました：" + e.getMessage();
         }
 
