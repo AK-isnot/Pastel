@@ -84,16 +84,16 @@ public class ChatService {
         this.vaultRepository = vaultRepository;
     }
 
-    public String chat(String inputText) {
+    public String chat(String inputText) throws IOException {
 
         // システムプロンプト
         String pastelMd;
         try (InputStream in = ChatService.class.getResourceAsStream("/PASTEL.md")) {
             pastelMd = new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            return "ERROR: failed to load PASTEL.md.";
+            throw e;
         } catch (Exception e) {
-            return "ERROR: An unexpected error occurred.";
+            throw e;
         }
 
         // 現在時刻取得
@@ -108,7 +108,7 @@ public class ChatService {
         try {
             memory = vaultRepository.readVaultMemoryFile(Path.of(pastelMemoryDir));
         } catch (IOException e) {
-            return "ERROR: failed to load memory files.";
+            throw e;
         }
 
         // 調べたことの取得
@@ -116,7 +116,7 @@ public class ChatService {
         try {
             researchIndex = vaultRepository.getFolderFileList(Path.of(pastelResearchDir), ".md");
         } catch (IOException e) {
-            return "ERROR: failed to load research files.";
+            throw e;
         }
 
         // システムメッセージとして情報を渡す

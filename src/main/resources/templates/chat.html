@@ -71,6 +71,13 @@
                             <div class="chat-bubble chat-bubble-secondary">考え中…</div>
                         </div>
                     </th:block>
+                    <!-- エラーが起きた時の吹き出し-->
+                    <div th:if="${replyFailed}" th:fragment="error" class="chat chat-start">
+                        <div class="chat-header">システム</div>
+                        <div class="chat-bubble chat-bubble-error">
+                            エラーが発生しました。
+                        </div>
+                    </div>
                 </div>
                 <div></div>
                 <!-- 送信フォーム -->

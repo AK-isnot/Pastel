@@ -2,12 +2,16 @@ package com.akisnot.pastel.Controller;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import com.akisnot.pastel.DTO.Messages;
 import com.akisnot.pastel.Service.ChatService;
+import com.akisnot.pastel.Tool.WebSearchTavily;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -19,6 +23,9 @@ public class ChatViewController {
     public ChatViewController(ChatService chatService) {
         this.chatService = chatService;
     }
+
+    // ロガー
+    private static final Logger log = LoggerFactory.getLogger(ChatViewController.class);
 
     @GetMapping("/")
     public String showChat(Model model) {
@@ -43,8 +50,15 @@ public class ChatViewController {
 
     @PostMapping("/reply")
     public String reply(@RequestParam("message") String message, Model model) {
-        // pastelと会話
-        chatService.chat(message);
+
+        try {
+            // pastelと会話
+            chatService.chat(message);
+        } catch (Exception e) {
+            log.error("返事の取得に失敗しました", e);
+            model.addAttribute("replyFailed", true);
+            return "chat :: error";
+        }
 
         // 会話した分を取得
         List<Messages> history = chatService.getHistory(1);
