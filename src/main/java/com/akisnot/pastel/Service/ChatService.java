@@ -28,8 +28,10 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.akisnot.pastel.DTO.PastelMessage;
+import com.akisnot.pastel.DTO.Messages;
+import com.akisnot.pastel.DTO.TokenUsage;
 import com.akisnot.pastel.Repository.MessageRepository;
+import com.akisnot.pastel.Repository.TokenUsageRepository;
 import com.akisnot.pastel.Repository.VaultRepository;
 import com.akisnot.pastel.Tool.ReadResearchNote;
 import com.akisnot.pastel.Tool.WebSearchTavily;
@@ -48,11 +50,13 @@ public class ChatService {
     private String pastelResearchDir;
 
     private final MessageRepository messageRepository;
+    private final TokenUsageRepository tokenUsageRepository;
     private final ChatClient chatClient;
     private final VaultRepository vaultRepository;
 
     public ChatService(
             MessageRepository messageRepository,
+            TokenUsageRepository tokenUsageRepository,
             ChatClient.Builder chatClientBuilder,
             WebSearchTavily webSearchTavily,
             VaultRepository vaultRepository,
@@ -60,6 +64,7 @@ public class ChatService {
             WriteResearchNote writeResearchNote,
             ReadResearchNote readResearchNote) {
         this.messageRepository = messageRepository;
+        this.tokenUsageRepository = tokenUsageRepository;
         this.chatClient = chatClientBuilder
                 // @toolの設定
                 .defaultTools(
@@ -96,7 +101,7 @@ public class ChatService {
         DateTimeFormatter f1 = DateTimeFormatter.ofPattern("yyyy年M月d日E曜日 H時m分", Locale.JAPANESE);
 
         // 履歴の取得
-        List<PastelMessage> history = getHistory(20);
+        List<Messages> history = getHistory(20);
 
         // メモリの取得
         String memory;
@@ -116,11 +121,11 @@ public class ChatService {
 
         // システムメッセージとして情報を渡す
         List<Message> messages = new ArrayList<>();
-        //pastel.mdを渡す
+        // pastel.mdを渡す
         messages.add(new SystemMessage(pastelMd));
-        //取得したメモリを渡す
+        // 取得したメモリを渡す
         messages.add(new SystemMessage(memory));
-        //調べものメモのファイル名の一覧を渡す
+        // 調べものメモのファイル名の一覧を渡す
         messages.add(new SystemMessage("# 調べものメモ\n" + researchIndex));
 
         // 前回の会話からどれだけの時間が経ったのか計算してプロンプトに含める
@@ -142,11 +147,11 @@ public class ChatService {
                             elapsedTime.toMinutesPart());
             statusText = "前回の会話から" + elapsedTimeString + "経過しました";
         }
-        //今の状況（現在時刻、前回の会話からどれだけ時間が経ったか）を渡す
+        // 今の状況（現在時刻、前回の会話からどれだけ時間が経ったか）を渡す
         messages.add(new SystemMessage("# 今の状況\n" + "現在時刻：" + nowDateTime.format(f1) + "\n" + statusText));
 
-        //会話履歴をまとめて、システムメッセージに渡す
-        for (PastelMessage m : history) {
+        // 会話履歴をまとめて、システムメッセージに渡す
+        for (Messages m : history) {
             if (m.role().equals("user")) {
                 messages.add(new UserMessage(m.content()));
             } else {
@@ -162,7 +167,7 @@ public class ChatService {
         messages.add(new UserMessage(inputText));
 
         // 送信内容の保存
-        messageRepository.save(PastelMessage.makeOfUser(inputText, pastelMdVersion));
+        messageRepository.save(Messages.makeOfUser(inputText, pastelMdVersion));
 
         // ぱすてるが検索した場合の検索文字列を受け取るリスト
         List<String> searchQueries = new ArrayList<>();
@@ -185,17 +190,24 @@ public class ChatService {
         Integer completionTokens = usage.getCompletionTokens(); // 出力
 
         // ぱすてるが検索をしたかで分岐する
+        Messages saveValue;
         if (searchQueries.isEmpty()) {
             // 保存処理（検索がなかった場合）
+            saveValue = Messages.makeOfAssistant(content, model,
+                    pastelMdVersion, null);
             messageRepository
-                    .save(PastelMessage.makeOfAssistant(content, promptTokens, completionTokens, model,
-                            pastelMdVersion, null));
+                    .save(saveValue);
         } else {
             // 保存処理（検索があった場合）
+            saveValue = Messages.makeOfAssistant(content, model,
+                    pastelMdVersion, searchQueries.toString());
             messageRepository
-                    .save(PastelMessage.makeOfAssistant(content, promptTokens, completionTokens, model,
-                            pastelMdVersion, searchQueries.toString()));
+                    .save(saveValue);
         }
+
+        // トークン使用量を保存する
+        tokenUsageRepository.save(new TokenUsage(saveValue.messageId(), promptTokens, completionTokens,
+                usage.getCacheReadInputTokens(), usage.getCacheWriteInputTokens()));
 
         // 返却
         return content;
@@ -203,7 +215,7 @@ public class ChatService {
     }
 
     // 履歴の返却メソッド
-    public List<PastelMessage> getHistory(int numberOfHistory) {
+    public List<Messages> getHistory(int numberOfHistory) {
         return messageRepository.getRecentHistory(numberOfHistory);
     }
 

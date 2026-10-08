@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import com.akisnot.pastel.DTO.PastelMessage;
+import com.akisnot.pastel.DTO.Messages;
 
 @Repository
 public class MessageRepository {
@@ -19,11 +19,11 @@ public class MessageRepository {
     }
 
     // 履歴の取得メソッド
-    public List<PastelMessage> getRecentHistory(int numberOfHistory) {
+    public List<Messages> getRecentHistory(int numberOfHistory) {
 
         // 履歴２０件取得する
-        List<PastelMessage> messages = jdbcClient.sql("select * from messages order by message_id DESC limit ?")
-                .param(numberOfHistory).query(PastelMessage.class).list();
+        List<Messages> messages = jdbcClient.sql("select * from messages order by message_id DESC limit ?")
+                .param(numberOfHistory).query(Messages.class).list();
 
         // 古い順に戻す
         Collections.reverse(messages);
@@ -33,16 +33,16 @@ public class MessageRepository {
     }
 
     // 回答・返答の保存メソッド
-    public void save(PastelMessage insertData) {
+    public void save(Messages insertData) {
 
         // 保存
         jdbcClient.sql("""
                 INSERT INTO messages (
                     user_id, message_id, role, content,
-                    input_tokens, output_tokens, use_model, pastel_version, search_queries
+                    use_model, pastel_version, search_queries
                 ) VALUES (
                     :userId, :messageId, :role, :content,
-                    :inputTokens, :outputTokens, :useModel, :pastelVersion, :searchQueries
+                    :useModel, :pastelVersion, :searchQueries
                 )
                 """)
                 .paramSource(insertData)
