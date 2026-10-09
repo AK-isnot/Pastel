@@ -3,6 +3,9 @@ package com.akisnot.pastel.Repository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -142,5 +145,66 @@ public class VaultRepository {
 
         return result;
 
+    }
+
+    // yyyy-MM-dd.md形式のデイリーノートを読んで、中身を返却する
+    public String readDailyNote(LocalDate localDate, Path folderPath) throws IOException {
+
+        // ファイル名を作成する
+        DateTimeFormatter f1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String filename = localDate.format(f1) + ".md";
+
+        // フォルダパスとファイル名を結合する
+        Path p = folderPath.resolve(filename);
+
+        // デイリーノートの存在を確認する
+        // あればそれを読み、なければ空文字を返す
+        String content;
+        if (Files.exists(p)) {
+            // ファイルを読む
+            content = Files.readString(p);
+        } else {
+            log.warn("デイリーノートがまだありません：{}", filename);
+            return "";
+        }
+
+        log.info("デイリーノートを読みました：{}", filename);
+
+        // 返却
+        return content;
+
+    }
+
+    // yyyy-MM-dd.md形式のデイリーノートに書き足す
+    public void writeDailyNote(LocalDate localDate, Path folderPath, String addContent) throws IOException {
+
+        // ファイル名を作成する
+        DateTimeFormatter f1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String filename = localDate.format(f1) + ".md";
+
+        // フォルダパスとファイル名を結合する
+        Path p = folderPath.resolve(filename);
+
+        // デイリーノートに追記をする
+        Files.writeString(p, addContent, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+
+        log.info("デイリーノートに追記しました：{}", filename);
+    }
+
+    // デイリーノートの一覧を返す
+    public List<Path> getlistDailyNote(Path folderPath) throws IOException {
+
+        // デイリーノートのフォルダのリストを返す
+        List<Path> fileList;
+        try (var stream = Files.list(folderPath)) {
+            fileList = stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".md"))
+                    .toList();
+        } catch (IOException e) {
+            throw e;
+        }
+
+        return fileList;
     }
 }

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,13 +26,15 @@ public class SystemMessageBuilder {
     private String pastelMemoryDir;
     @Value("${pastel.vault.research-dir}")
     private String pastelResearchDir;
+    @Value("${pastel.vault.dailyNote-dir}")
+    private String pastelDailyNoteDir;
 
     private final VaultRepository vaultRepository;
 
     public SystemMessageBuilder(VaultRepository vaultRepository) {
         this.vaultRepository = vaultRepository;
     }
-    
+
     // ロガー
     private static final Logger log = LoggerFactory.getLogger(SystemMessageBuilder.class);
 
@@ -71,6 +75,21 @@ public class SystemMessageBuilder {
             throw e;
         }
         messages.add(new SystemMessage("# 調べものメモ\n" + researchIndex));
+
+        // 今日のデイリーノートを読む
+        String dailyNoteContent;
+        try {
+            dailyNoteContent = vaultRepository.readDailyNote(LocalDate.now(ZoneId.of("Asia/Tokyo")),
+                    Path.of(pastelDailyNoteDir));
+        } catch (IOException e) {
+            log.error("デイリーノートの取得に失敗しました", e);
+            throw e;
+        }
+        if (!dailyNoteContent.isEmpty()) {
+            messages.add(new SystemMessage("# 今日のデイリーノート\n" + dailyNoteContent));
+        } else {
+            messages.add(new SystemMessage("# 今日のデイリーノート\n(まだなにもかいていません)"));
+        }
 
         return messages;
 
