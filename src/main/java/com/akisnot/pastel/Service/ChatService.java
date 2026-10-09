@@ -11,11 +11,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.anthropic.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.AnthropicCacheStrategy;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -31,7 +32,7 @@ import com.akisnot.pastel.DTO.Messages;
 import com.akisnot.pastel.DTO.TokenUsage;
 import com.akisnot.pastel.Repository.MessageRepository;
 import com.akisnot.pastel.Repository.TokenUsageRepository;
-import com.akisnot.pastel.Repository.VaultRepository;
+import com.akisnot.pastel.Scheduled.ScheduledReflectOn;
 import com.akisnot.pastel.Tool.ReadResearchNote;
 import com.akisnot.pastel.Tool.WebSearchTavily;
 import com.akisnot.pastel.Tool.WriteMemoryNote;
@@ -82,7 +83,13 @@ public class ChatService {
         this.systemMessageBuilder = systemMessageBuilder;
     }
 
+    // ロガー
+    private static final Logger log = LoggerFactory.getLogger(ChatService.class);
+
     public String chat(String inputText) throws IOException {
+
+        // ロガー用に処理開始日時を取っておく
+        Instant startTime = Instant.now();
 
         // システムプロンプトを取得（PASTEL.md,メモリ,調べもの一覧のリスト）
         List<Message> messages = new ArrayList<>();
@@ -167,6 +174,9 @@ public class ChatService {
         // トークン使用量を保存する
         tokenUsageRepository.save(new TokenUsage(saveValue.messageId(), promptTokens, completionTokens,
                 usage.getCacheReadInputTokens(), usage.getCacheWriteInputTokens()));
+
+        // ログ出力
+        log.info("１ターン終了 所要時間：" + Duration.between(startTime, Instant.now()).toMillis() + " ms");
 
         // 返却
         return content;

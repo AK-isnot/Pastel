@@ -43,6 +43,9 @@ build/
 *.log
 logs/ 
 
+# ツール
+tools/
+
 # 個人用のコマンドメモ（PCのパスを含む）
 command.txt
 
