@@ -1,6 +1,5 @@
 package com.akisnot.pastel.Scheduled;
 
-import com.akisnot.pastel.Tool.WriteMemoryNote;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -31,32 +30,34 @@ import com.akisnot.pastel.DTO.Messages;
 import com.akisnot.pastel.Repository.MessageRepository;
 import com.akisnot.pastel.Tool.ReadResearchNote;
 import com.akisnot.pastel.Tool.WebSearchTavily;
+import com.akisnot.pastel.Tool.WriteMemoryNote;
 import com.akisnot.pastel.Tool.WriteResearchNote;
 
 @Configuration
 @EnableScheduling
-public class ScheduledResearch {
+public class ScheduledReflectOn {
 
     private final ChatClient chatClient;
     private final SystemMessageBuilder systemMessageBuilder;
     private final MessageRepository messageRepository;
     private final HistoryMessageBuilder historyMessageBuilder;
 
-    public ScheduledResearch(
+    public ScheduledReflectOn(
+
             ChatClient.Builder chatClientBuilder,
-            WebSearchTavily webSearchTavily,
-            WriteResearchNote writeResearchNote,
-            SystemMessageBuilder systemMessageBuilder,
             ReadResearchNote readResearchNote,
             WriteMemoryNote writeMemoryNote,
+            SystemMessageBuilder systemMessageBuilder,
             MessageRepository messageRepository,
-            HistoryMessageBuilder historyMessageBuilder) {
+            HistoryMessageBuilder historyMessageBuilder
 
+    ) {
+        this.systemMessageBuilder = systemMessageBuilder;
+        this.messageRepository = messageRepository;
+        this.historyMessageBuilder = historyMessageBuilder;
         this.chatClient = chatClientBuilder
                 // @toolの設定
                 .defaultTools(
-                        webSearchTavily,
-                        writeResearchNote,
                         readResearchNote,
                         writeMemoryNote)
                 // キャッシュの設定
@@ -68,28 +69,28 @@ public class ScheduledResearch {
                                                 .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
                                                 .cacheToolResults(true).multiBlockSystemCaching(true).build()))
                 .build();
-        this.systemMessageBuilder = systemMessageBuilder;
-        this.messageRepository = messageRepository;
-        this.historyMessageBuilder = historyMessageBuilder;
     }
 
     // ロガー
-    private static final Logger log = LoggerFactory.getLogger(ScheduledResearch.class);
+    private static final Logger log = LoggerFactory.getLogger(ScheduledReflectOn.class);
 
-    // 調べものの指示
+    // 指示
     private static final String order = """
-            （システムからの合図）自由時間です。
-             メモリの「やりかけの話」を見て、今回取りかかる話を1つ決めてください。続きを選んでも、新しい話を始めてもかまいません。「やりかけの話」がまだなければ、調べものメモの一覧から作ってください。
-             続きを調べるときは、先にその話の調べものメモを読んでください。
-             残したいと思ったことは、あなたの言葉で調べものメモにしてください。何本でも、0本でもかまいません。
-             オーナーに話したいことは、『オーナーに話したいこと』ファイルに書いて残しておきましょう。
-             最後に「やりかけの話」を、同じ名前で全文書き直してください。話ごとに、続ける／いったん止める／やめる と理由を一言、最後に触った日、次に知りたいことを書きます。やめた話も消さずに残してください。
-             """;;
+            （システムからの合図）振り返りの時間です。
+            メモリや会話の履歴、最近調べたことを見て、最近の振り返りをしましょう。
+            気になったこと・話したいこと・調べたいことを考えて、メモリを更新してください。
+            書き込むファイルは次です。
+            調べたくなったこと → やりかけの話
+            話したい事 → オーナーに話したいこと
+            オーナーについて分かったこと → オーナーの事を書いたファイル
+            自分の事→自分の事を書いたファイル
+            必要なら新しいファイルを作成しましょう。
+            最後に、やったことを日記のように出力しましょう。
+            """;;
 
-    @Scheduled(initialDelay = 1, fixedRate = 1, timeUnit = TimeUnit.HOURS)
-    public void freetime() {
-
-        log.info("自由時間を開始します");
+    @Scheduled(initialDelay = 2, fixedRate = 3, timeUnit = TimeUnit.HOURS)
+    public void reflectOn() {
+        log.info("自由時間：振り返りを開始します");
 
         // システムプロンプトを作る
         // PASTEL.md,メモリ,調べもの一覧のリストを取得
@@ -98,7 +99,7 @@ public class ScheduledResearch {
             messages.addAll(systemMessageBuilder.build());
         } catch (IOException e) {
             log.error("システムプロンプトの作成に失敗しました", e);
-            log.info("自由時間を終了します");
+            log.info("自由時間：振り返りを終了します");
             return;
         }
 
@@ -114,7 +115,7 @@ public class ScheduledResearch {
 
         // 最近の会話の履歴
         // 履歴の取得
-        List<Messages> history = messageRepository.getRecentHistory(20);
+        List<Messages> history = messageRepository.getRecentHistory(50);
         // 履歴をユーザーとアシスタントに分けてリスト化して送信プロンプトに混ぜる
         messages.addAll(historyMessageBuilder.build(history));
 
@@ -126,8 +127,6 @@ public class ScheduledResearch {
         // ぱすてるの応答をログに出す
         log.info("ぱすてるの応答：{}", response.getResults().getLast().getOutput().getText().toString());
 
-        log.info("自由時間を終了します");
-
+        log.info("自由時間：振り返りを終了します");
     }
-
 }

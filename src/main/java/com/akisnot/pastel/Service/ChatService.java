@@ -1,9 +1,6 @@
 package com.akisnot.pastel.Service;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -28,6 +25,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.akisnot.pastel.Component.HistoryMessageBuilder;
+import com.akisnot.pastel.Component.SystemMessageBuilder;
 import com.akisnot.pastel.DTO.Messages;
 import com.akisnot.pastel.DTO.TokenUsage;
 import com.akisnot.pastel.Repository.MessageRepository;
@@ -44,27 +43,26 @@ public class ChatService {
 
     @Value("${pastel.md-version}")
     private String pastelMdVersion;
-    @Value("${pastel.vault.memory-dir}")
-    private String pastelMemoryDir;
-    @Value("${pastel.vault.research-dir}")
-    private String pastelResearchDir;
 
     private final MessageRepository messageRepository;
     private final TokenUsageRepository tokenUsageRepository;
     private final ChatClient chatClient;
-    private final VaultRepository vaultRepository;
+    private final SystemMessageBuilder systemMessageBuilder;
+    private final HistoryMessageBuilder historyMessageBuilder;
 
     public ChatService(
             MessageRepository messageRepository,
             TokenUsageRepository tokenUsageRepository,
             ChatClient.Builder chatClientBuilder,
+            SystemMessageBuilder systemMessageBuilder,
             WebSearchTavily webSearchTavily,
-            VaultRepository vaultRepository,
             WriteMemoryNote writeMemoryNote,
             WriteResearchNote writeResearchNote,
-            ReadResearchNote readResearchNote) {
+            ReadResearchNote readResearchNote,
+            HistoryMessageBuilder historyMessageBuilder) {
         this.messageRepository = messageRepository;
         this.tokenUsageRepository = tokenUsageRepository;
+        this.historyMessageBuilder = historyMessageBuilder;
         this.chatClient = chatClientBuilder
                 // @toolの設定
                 .defaultTools(
@@ -81,20 +79,14 @@ public class ChatService {
                                                 .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
                                                 .cacheToolResults(true).multiBlockSystemCaching(true).build()))
                 .build();
-        this.vaultRepository = vaultRepository;
+        this.systemMessageBuilder = systemMessageBuilder;
     }
 
     public String chat(String inputText) throws IOException {
 
-        // システムプロンプト
-        String pastelMd;
-        try (InputStream in = ChatService.class.getResourceAsStream("/PASTEL.md")) {
-            pastelMd = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw e;
-        } catch (Exception e) {
-            throw e;
-        }
+        // システムプロンプトを取得（PASTEL.md,メモリ,調べもの一覧のリスト）
+        List<Message> messages = new ArrayList<>();
+        messages.addAll(systemMessageBuilder.build());
 
         // 現在時刻取得
         ZonedDateTime nowDateTime = ZonedDateTime.now(ZoneId.of("Asia/Tokyo"));
@@ -102,31 +94,6 @@ public class ChatService {
 
         // 履歴の取得
         List<Messages> history = getHistory(20);
-
-        // メモリの取得
-        String memory;
-        try {
-            memory = vaultRepository.readVaultMemoryFile(Path.of(pastelMemoryDir));
-        } catch (IOException e) {
-            throw e;
-        }
-
-        // 調べたことの取得
-        String researchIndex;
-        try {
-            researchIndex = vaultRepository.getFolderFileList(Path.of(pastelResearchDir), ".md");
-        } catch (IOException e) {
-            throw e;
-        }
-
-        // システムメッセージとして情報を渡す
-        List<Message> messages = new ArrayList<>();
-        // pastel.mdを渡す
-        messages.add(new SystemMessage(pastelMd));
-        // 取得したメモリを渡す
-        messages.add(new SystemMessage(memory));
-        // 調べものメモのファイル名の一覧を渡す
-        messages.add(new SystemMessage("# 調べものメモ\n" + researchIndex));
 
         // 前回の会話からどれだけの時間が経ったのか計算してプロンプトに含める
         // 最後の会話時間をUlidから計算するために、履歴から取得する
@@ -151,19 +118,9 @@ public class ChatService {
         messages.add(new SystemMessage("# 今の状況\n" + "現在時刻：" + nowDateTime.format(f1) + "\n" + statusText));
 
         // 会話履歴をまとめて、システムメッセージに渡す
-        for (Messages m : history) {
-            if (m.role().equals("user")) {
-                messages.add(new UserMessage(m.content()));
-            } else {
-                if (m.searchQueries() == null) {
-                    messages.add(new AssistantMessage(m.content()));
-                } else {
-                    messages.add(
-                            new AssistantMessage(m.content() + "\n［システム記録：この返事の前に" + m.searchQueries() + "で検索した］"));
-                }
+        messages.addAll(historyMessageBuilder.build(history));
 
-            }
-        }
+        // 今回のメッセージを付け足す
         messages.add(new UserMessage(inputText));
 
         // 送信内容の保存
@@ -175,7 +132,7 @@ public class ChatService {
 
         // 送信
         ChatResponse response = chatClient.prompt(new Prompt(messages))
-                .toolContext(Map.of("queries", searchQueries,"messageId", ownerSaveValue.messageId()))
+                .toolContext(Map.of("queries", searchQueries, "messageId", ownerSaveValue.messageId()))
                 .call().chatResponse();
 
         // 返却内容の保存
