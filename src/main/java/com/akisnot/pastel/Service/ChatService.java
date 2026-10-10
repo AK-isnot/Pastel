@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.akisnot.pastel.Component.HistoryMessageBuilder;
+import com.akisnot.pastel.Component.KeepTextToolCallingAdvisor;
 import com.akisnot.pastel.Component.SystemMessageBuilder;
 import com.akisnot.pastel.DTO.Messages;
 import com.akisnot.pastel.DTO.TokenUsage;
@@ -60,7 +61,8 @@ public class ChatService {
             WriteMemoryNote writeMemoryNote,
             WriteResearchNote writeResearchNote,
             ReadResearchNote readResearchNote,
-            HistoryMessageBuilder historyMessageBuilder) {
+            HistoryMessageBuilder historyMessageBuilder,
+            KeepTextToolCallingAdvisor keepTextToolCallingAdvisor) {
         this.messageRepository = messageRepository;
         this.tokenUsageRepository = tokenUsageRepository;
         this.historyMessageBuilder = historyMessageBuilder;
@@ -71,6 +73,8 @@ public class ChatService {
                         writeMemoryNote,
                         writeResearchNote,
                         readResearchNote)
+                // ツールの往復を回す部品を、道具と一緒に書かれた返事の文を拾える版に差し替える
+                .defaultAdvisors(keepTextToolCallingAdvisor)
                 // キャッシュの設定
                 .defaultOptions(
                         AnthropicChatOptions
@@ -141,6 +145,12 @@ public class ChatService {
         ChatResponse response = chatClient.prompt(new Prompt(messages))
                 .toolContext(Map.of("queries", searchQueries, "messageId", ownerSaveValue.messageId()))
                 .call().chatResponse();
+
+        // 道具を呼んだあとに何も書かなかった場合は応答が空で返ってくる
+        // 返事の文が手元にないので、エラーとして画面にエラーの吹き出しを出す
+        if (response.getResults().isEmpty()) {
+            throw new IllegalStateException("ぱすてるの返事が空でした（道具を呼んだあとに文がありませんでした）");
+        }
 
         // 返却内容の保存
         // 返却本文

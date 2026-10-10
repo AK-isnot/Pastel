@@ -151,6 +151,14 @@ public class ScheduledTurnDailyNote {
             return;
         }
 
+        // 応答が空で返ってきた場合は、書き込むものがないので終わる
+        // （道具を渡していないのでまず起きないが、getLastで落ちないように確認する）
+        if (response.getResults().isEmpty()) {
+            log.error("ぱすてるの応答が空でした。デイリーノートには書きません");
+            log.info("処理を終了します");
+            return;
+        }
+
         // 返事を今日のデイリーノートに書き込む
         try {
             vaultRepository.writeDailyNote(localDate, Path.of(pastelDailyNoteDir),

@@ -135,6 +135,14 @@ public class ScheduledReflectOn {
                 .toolContext(Map.of("queries", new ArrayList<>()))
                 .call().chatResponse();
 
+        // 道具を呼んだあとに何も書かなかった場合は応答が空で返ってくるので、確認してから取り出す
+        // 空のときは日記がないので、デイリーノートには書かずに終わる
+        if (response.getResults().isEmpty()) {
+            log.info("ぱすてるの応答：（最後の文はありませんでした）。デイリーノートには書きません");
+            log.info("自由時間：振り返りを終了します");
+            return;
+        }
+
         // ぱすてるの応答をログに出す
         log.info("ぱすてるの応答：{}", response.getResults().getLast().getOutput().getText().toString());
 
