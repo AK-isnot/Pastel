@@ -3,6 +3,7 @@ package com.akisnot.pastel.Scheduled;
 import com.akisnot.pastel.Repository.VaultRepository;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -71,6 +72,7 @@ public class ScheduledReflectOn {
                 .defaultOptions(
                         AnthropicChatOptions
                                 .builder()
+                                .timeout(Duration.ofMinutes(2))
                                 .cacheOptions(
                                         AnthropicCacheOptions.builder()
                                                 .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
@@ -99,7 +101,7 @@ public class ScheduledReflectOn {
             最後に、やったことを日記のように出力しましょう。
             """;;
 
-    @Scheduled(initialDelay = 2, fixedRate = 3, timeUnit = TimeUnit.HOURS)
+    @Scheduled(initialDelay = 1, fixedRate = 3, timeUnit = TimeUnit.HOURS)
     public void reflectOn() {
         log.info("自由時間：振り返りを開始します");
 
