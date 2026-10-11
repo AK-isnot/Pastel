@@ -82,9 +82,10 @@
                     </div>
                     <!-- 考え中。画面に出たら/replyに送って、ぱすてるの返事と入れ替わる -->
                     <div class="chat chat-start" hx-post="/reply" hx-trigger="load"
-                        hx-swap="outerHTML scroll:#log:bottom settle:0ms" hx-include="find input"
+                        hx-swap="outerHTML scroll:#log:bottom settle:0ms" hx-include="this"
                         hx-disabled-elt="#send-button, textarea">
                         <input type="hidden" name="message" th:value="${message}">
+                        <input th:if="${imageName != null}" type="hidden" name="imageName" th:value="${imageName}">
                         <div class="chat-header">ぱすてる</div>
                         <div class="chat-bubble chat-bubble-secondary">考え中…</div>
                     </div>

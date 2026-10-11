@@ -54,7 +54,7 @@ public class ChatViewController {
     public String send(@RequestParam("message") String message, Model model, MultipartFile image) {
 
         // 写真があるか確認し、存在する場合は画像を保存する
-        if ( image != null && !image.isEmpty()) {
+        if (image != null && !image.isEmpty()) {
             // ファイル名に使うUildをとる
             Ulid ulid = UlidCreator.getMonotonicUlid();
             // 元の画像の拡張子を取る
@@ -72,6 +72,8 @@ public class ChatViewController {
             // 画像を保存する
             try {
                 image.transferTo(Path.of("data/images/" + filename));
+                // 画面に渡す
+                model.addAttribute("imageName", filename);
             } catch (Exception e) {
                 log.error("画像の保存に失敗しました", e);
             }
@@ -86,11 +88,14 @@ public class ChatViewController {
     }
 
     @PostMapping("/reply")
-    public String reply(@RequestParam("message") String message, Model model) {
+    public String reply(
+            @RequestParam("message") String message,
+            @RequestParam(required = false) String imageName,
+            Model model) {
 
         try {
             // pastelと会話
-            chatService.chat(message);
+            chatService.chat(message,imageName);
         } catch (Exception e) {
             log.error("返事の取得に失敗しました", e);
             model.addAttribute("replyFailed", true);

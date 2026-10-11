@@ -23,7 +23,11 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.stereotype.Service;
 
 import com.akisnot.pastel.Component.HistoryMessageBuilder;
@@ -82,7 +86,10 @@ public class ChatService {
                                 .cacheOptions(
                                         AnthropicCacheOptions.builder()
                                                 .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
-                                                .cacheToolResults(true).multiBlockSystemCaching(true).build()))
+                                                .cacheToolResults(true)
+                                                .multiBlockSystemCaching(
+                                                        true)
+                                                .build()))
                 .build();
         this.systemMessageBuilder = systemMessageBuilder;
     }
@@ -90,7 +97,7 @@ public class ChatService {
     // ロガー
     private static final Logger log = LoggerFactory.getLogger(ChatService.class);
 
-    public String chat(String inputText) throws IOException {
+    public String chat(String inputText, String imageName) throws IOException {
 
         // ロガー用に処理開始日時を取っておく
         Instant startTime = Instant.now();
@@ -132,7 +139,28 @@ public class ChatService {
         messages.addAll(historyMessageBuilder.build(history));
 
         // 今回のメッセージを付け足す
-        messages.add(new UserMessage(inputText));
+        if (imageName != null) {
+            // ファイルを指す
+            FileSystemResource resource = new FileSystemResource("data/images/" + imageName);
+
+            // MIMEを決める（分からない形式なら例外）
+            MediaType mediaType = MediaTypeFactory.getMediaType(resource).orElseThrow();
+
+            // 画像の部品を作る
+            Media media = Media.builder()
+                    .mimeType(mediaType)
+                    .data(resource)
+                    .build();
+
+            // メッセージを作る
+            UserMessage userMessage = UserMessage.builder()
+                    .text(inputText)
+                    .media(media)
+                    .build();
+            messages.add(userMessage);
+        } else {
+            messages.add(new UserMessage(inputText));
+        }
 
         // 送信内容の保存
         Messages ownerSaveValue = Messages.makeOfUser(inputText, pastelMdVersion);
