@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<html lang="ja" data-theme="light" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
@@ -13,6 +13,7 @@
     <link rel="manifest" href="manifest.json">
     <!-- htmxの読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx-ext-sse@2.2.4"></script>
     <!--VRMを動かすのに必要なもののインポート-->
     <script type="importmap">
 			{
@@ -24,73 +25,103 @@
 			}
 	</script>
     <script type="module" src="/js/avatar.js"></script>
+    <style>
+        #moon {
+            left: calc(50% + 70px);
+            top: 40%;
+            height: 76vh;
+            transform: translate(-50%, -50%);
+        }
+
+        /* 上に流れた吹き出しは薄れて消える */
+        #log {
+            mask-image: linear-gradient(to bottom, transparent 0, #000 2.5rem);
+            scrollbar-width: none;
+        }
+    </style>
+
 </head>
 
 <body>
 
-    <main class="main max-w-7xl mx-auto p-4">
-        <h1 class="text-2xl font-bold mb-4 ">Pastel developing now</h1>
-        <div class="flex">
-            <!--ぱすてるの表示キャンバス-->
-            <canvas id="pastel-canvas" class="sticky top-0 self-start"></canvas>
-            <div class="flex-1">
-                <!-- 履歴 -->
-                <div id="messages">
-                    <!-- messageList。Controllerから呼ばれる -->
-                    <th:block th:fragment="messageList">
-                        <div th:each="m : ${messages}">
-                            <!-- 自分の発言は右 -->
-                            <div th:if="${m.role == 'user'}" class="chat chat-end">
-                                <div class="chat-header">オーナー</div>
-                                <div class="chat-bubble chat-bubble-primary whitespace-pre-wrap" th:text="${m.content}">
-                                    本文
-                                </div>
-                            </div>
-                            <!-- パステルの発言は左 -->
-                            <div th:if="${m.role == 'assistant'}" class="chat chat-start">
-                                <div class="chat-header">ぱすてる</div>
-                                <div class="chat-bubble chat-bubble-secondary whitespace-pre-wrap"
-                                    th:text="${m.content}">本文
-                                </div>
-                            </div>
-                        </div>
-                    </th:block>
-                    <!-- pending。送信した直後に/sendから呼ばれる -->
-                    <th:block th:fragment="pending" th:if="${message != null}">
-                        <!-- 自分の発言 -->
-                        <div class="chat chat-end">
+    <!--背景の月-->
+    <img id="moon" src="img/icon-512.png" alt="" class="fixed pointer-events-none">
+
+    <!--ぱすてるの表示キャンバス-->
+    <canvas id="pastel-canvas" class="fixed inset-0"></canvas>
+
+    <main class="fixed right-4 top-4 bottom-4 w-[24rem] flex flex-col">
+        <div id="log" class="relative flex-1 min-h-0 flex flex-col overflow-y-auto pt-10">
+            <!-- 履歴 -->
+            <div id="messages" class="mt-auto">
+                <!-- messageList。Controllerから呼ばれる -->
+                <th:block th:fragment="messageList">
+                    <div th:each="m : ${messages}">
+                        <!-- 自分の発言は右 -->
+                        <div th:if="${m.role == 'user'}" class="chat chat-end">
                             <div class="chat-header">オーナー</div>
-                            <div class="chat-bubble chat-bubble-primary whitespace-pre-wrap" th:text="${message}">本文
+                            <div class="chat-bubble chat-bubble-primary whitespace-pre-wrap" th:text="${m.content}">
+                                本文
                             </div>
                         </div>
-                        <!-- 考え中。画面に出たら/replyに送って、ぱすてるの返事と入れ替わる -->
-                        <div class="chat chat-start" hx-post="/reply" hx-trigger="load"
-                            hx-swap="outerHTML show:window:bottom settle:0ms" hx-include="find input"
-                            hx-disabled-elt="#send-button">
-                            <input type="hidden" name="message" th:value="${message}">
+                        <!-- パステルの発言は左 -->
+                        <div th:if="${m.role == 'assistant'}" class="chat chat-start">
                             <div class="chat-header">ぱすてる</div>
-                            <div class="chat-bubble chat-bubble-secondary">考え中…</div>
-                        </div>
-                    </th:block>
-                    <!-- エラーが起きた時の吹き出し-->
-                    <div th:if="${replyFailed}" th:fragment="error" class="chat chat-start">
-                        <div class="chat-header">システム</div>
-                        <div class="chat-bubble chat-bubble-error">
-                            エラーが発生しました。
+                            <div class="chat-bubble chat-bubble-secondary whitespace-pre-wrap" th:text="${m.content}">本文
+                            </div>
                         </div>
                     </div>
+                </th:block>
+                <!-- pending。送信した直後に/sendから呼ばれる -->
+                <th:block th:fragment="pending" th:if="${message != null}">
+                    <!-- 自分の発言 -->
+                    <div class="chat chat-end">
+                        <div class="chat-header">オーナー</div>
+                        <div class="chat-bubble chat-bubble-primary whitespace-pre-wrap" th:text="${message}">本文
+                        </div>
+                    </div>
+                    <!-- 考え中。画面に出たら/replyに送って、ぱすてるの返事と入れ替わる -->
+                    <div class="chat chat-start" hx-post="/reply" hx-trigger="load"
+                        hx-swap="outerHTML scroll:#log:bottom settle:0ms" hx-include="find input"
+                        hx-disabled-elt="#send-button, textarea">
+                        <input type="hidden" name="message" th:value="${message}">
+                        <div class="chat-header">ぱすてる</div>
+                        <div class="chat-bubble chat-bubble-secondary">考え中…</div>
+                    </div>
+                </th:block>
+                <!-- エラーが起きた時の吹き出し-->
+                <div th:if="${replyFailed}" th:fragment="error" class="chat chat-start">
+                    <div class="chat-header">システム</div>
+                    <div class="chat-bubble chat-bubble-error">
+                        エラーが発生しました。
+                    </div>
                 </div>
-                <div></div>
-                <!-- 送信フォーム -->
-                <form hx-post="/send" hx-target="#messages" hx-swap="beforeend show:window:bottom settle:0ms"
-                    hx-on::config-request="setTimeout(() => this.reset())" class="flex items-end sticky bottom-0">
-                    <textarea name="message" required class="textarea flex-1 bg-base-100"></textarea>
-                    <button type="submit" id="send-button" class="btn btn-primary">送信</button>
-                </form>
             </div>
         </div>
+        <!-- 送信フォーム -->
+        <form hx-post="/send" hx-trigger="submit, keydown[ctrlKey&&key=='Enter'] from:textarea" hx-target="#messages" hx-swap="beforeend scroll:#log:bottom settle:0ms"
+            hx-on::config-request="setTimeout(() => this.reset())"
+            class="flex items-end gap-2 rounded-3xl border border-base-300 bg-base-100 py-1.5 pl-5 pr-1.5 mt-2">
+            <textarea name="message" required rows="1" placeholder="メッセージ"
+                class="flex-1 resize-none border-0 bg-transparent outline-none py-2 field-sizing-content max-h-40"></textarea>
+            <button type="submit" id="send-button" class="btn btn-circle btn-primary" aria-label="送信">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5">
+                    <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
+                </svg>
+            </button>
+        </form>
+
+
     </main>
-    <script>window.scrollTo(0, document.body.scrollHeight);</script>
+
+    <div hx-ext="sse" sse-connect="/events">
+        <div hx-get="/latest" hx-trigger="sse:new-message" hx-target="#messages" hx-swap="beforeend scroll:#log:bottom">
+        </div>
+    </div>
+
+    <!-- 開いたとき、会話の欄を一番下までスクロールする -->
+    <script>document.getElementById("log").scrollTo(0, document.getElementById("log").scrollHeight);</script>
 </body>
 
 </html>

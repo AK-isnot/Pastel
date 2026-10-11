@@ -7,8 +7,8 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
-import org.stringtemplate.v4.compiler.CodeGenerator.primary_return;
 
+import com.akisnot.pastel.Component.MessageNotifier;
 import com.akisnot.pastel.DTO.Messages;
 import com.akisnot.pastel.DTO.ToolCalls;
 import com.akisnot.pastel.Repository.MessageRepository;
@@ -26,12 +26,14 @@ public class TalkToOwner {
 
     private final MessageRepository messageRepository;
     private final ToolCallsRepository toolCallsRepository;
+    private final MessageNotifier messageNotifier;
 
     public TalkToOwner(
             MessageRepository messageRepository,
-            ToolCallsRepository toolCallsRepository) {
+            ToolCallsRepository toolCallsRepository, MessageNotifier messageNotifier) {
         this.toolCallsRepository = toolCallsRepository;
         this.messageRepository = messageRepository;
+        this.messageNotifier = messageNotifier;
     }
 
     // ロガー
@@ -42,7 +44,7 @@ public class TalkToOwner {
             @ToolParam(description = "オーナーに話しかける内容") String content) {
 
         // ぱすてるが話しかける内容を保存する
-        Messages message= Messages.makeOfAssistant(content, ModelVersion, pastelMdVersion, null);
+        Messages message = Messages.makeOfAssistant(content, ModelVersion, pastelMdVersion, null);
         try {
             messageRepository.save(message);
         } catch (DataAccessException e) {
@@ -56,6 +58,9 @@ public class TalkToOwner {
         // Toolが使用されたことを記録する
         toolCallsRepository.save(ToolCalls.make(message.messageId(), "talkToOwner",
                 content.substring(0, Math.min(content.length(), 10)), 1));
+        
+        //画面側に通知する
+        messageNotifier.notifyNewMessage();
 
         return "オーナーに話しかけることが出来ました";
 

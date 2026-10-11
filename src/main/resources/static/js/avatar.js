@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
-const WIDTH = 600;
+const WIDTH = window.innerWidth;
 const HEIGHT = window.innerHeight;
 
 // レンダラー
@@ -17,13 +17,13 @@ renderer.setPixelRatio(window.devicePixelRatio);
 // camera
 const camera = new THREE.PerspectiveCamera(30.0, WIDTH / HEIGHT, 0.1, 20.0);
 // cameraの初期位置を決める（左右、上下、奥行き）回転してるのでちょっとむずい
-camera.position.set(0.0, 1.5, 1.0);
+camera.position.set(0.0, 1.3, 2.2);
 
 // camera controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.screenSpacePanning = true;
 //カメラが狙う対象、位置をきめる
-controls.target.set(0.0, 1.4, 0.0);
+controls.target.set(0.0, 1.2, 0.0);
 controls.update();
 
 // scene

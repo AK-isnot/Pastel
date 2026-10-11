@@ -8,20 +8,24 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import com.akisnot.pastel.Component.MessageNotifier;
 import com.akisnot.pastel.DTO.Messages;
 import com.akisnot.pastel.Service.ChatService;
 import com.akisnot.pastel.Tool.WebSearchTavily;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Controller
 public class ChatViewController {
 
     private final ChatService chatService;
+    private final MessageNotifier messageNotifier;
 
-    public ChatViewController(ChatService chatService) {
+    public ChatViewController(ChatService chatService, MessageNotifier messageNotifier) {
         this.chatService = chatService;
+        this.messageNotifier = messageNotifier;
     }
 
     // ロガー
@@ -69,4 +73,23 @@ public class ChatViewController {
         // chat.html内のmessageListの部品だけ返す
         return "chat :: messageList";
     }
+    
+    //
+    @GetMapping("/events")
+    public SseEmitter events() {
+        return messageNotifier.subscribe();
+    }
+
+    @GetMapping("/latest")
+    public String latest(Model model) {
+        // 会話した分を取得
+        List<Messages> history = chatService.getHistory(1);
+
+        // 画面に渡す
+        model.addAttribute("messages", history);
+
+        // chat.html内のmessageListの部品だけ返す
+        return "chat :: messageList";
+    }
+
 }
