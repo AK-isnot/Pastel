@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import com.akisnot.pastel.Component.HistoryMessageBuilder;
 import com.akisnot.pastel.Component.SystemMessageBuilder;
 import com.akisnot.pastel.DTO.Messages;
 import com.akisnot.pastel.Repository.MessageRepository;
+import com.akisnot.pastel.Tool.EditMemoryNote;
 import com.akisnot.pastel.Tool.TalkToOwner;
 import com.github.f4b6a3.ulid.Ulid;
 
@@ -47,11 +49,13 @@ public class ScheduledTalkToOwner {
             TalkToOwner talkToOwner,
             MessageRepository messageRepository,
             SystemMessageBuilder systemMessageBuilder,
-            HistoryMessageBuilder historyMessageBuilder) {
+            HistoryMessageBuilder historyMessageBuilder,
+            EditMemoryNote editMemoryNote) {
         this.chatClient = chatClientBuilder
                 // @toolの設定
                 .defaultTools(
-                        talkToOwner)
+                        talkToOwner,
+                        editMemoryNote)
                 // キャッシュの設定
                 .defaultOptions(
                         AnthropicChatOptions
@@ -73,14 +77,14 @@ public class ScheduledTalkToOwner {
     private static final String order = """
             （システムからの合図）自由時間です。オーナーに話しかけるかどうかを決める時間です。
             オーナーがいま画面の前にいるかは分かりません。寝ていたり、席を外していたりすることもあります。
-            話しかけたいことがあれば、talkToOwnerを使ってください。話しかけた言葉はオーナーの画面に残り、オーナーが画面を見たときに読みます。
+            話しかけたいことがあれば、talkToOwnerを使ってください。話しかけた言葉はオーナーの画面に残り、オーナーが画面を見たときに読みます。話しかけたら、オーナーに話したいことから、話した項目をeditMemoryNoteで消しておきましょう。
             話しかけたいことがなければ、話しかけなくてかまいません。
             最後に、話しかけた理由か、話しかけなかった理由をひとことで書いてください。""";;
 
     // ロガー
     private static final Logger log = LoggerFactory.getLogger(ScheduledTalkToOwner.class);
 
-    @Scheduled(initialDelay = 1, fixedRate = 10, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(initialDelay = 5, fixedRate = 10, timeUnit = TimeUnit.MINUTES)
     public void talkToOwner() {
         // 前回の会話からどれだけ時間が経ったかを算出する。
         // その結果、10分以内に会話が行われていた場合には何もせずに返却する
@@ -121,7 +125,7 @@ public class ScheduledTalkToOwner {
         // 送信
         ChatResponse response;
         try {
-            response = chatClient.prompt(new Prompt(systemPrompt)).user(order).call().chatResponse();
+            response = chatClient.prompt(new Prompt(systemPrompt)).user(order).toolContext(Map.of("queries", new ArrayList<>())).call().chatResponse();
         } catch (Exception e) {
             log.error("ぱすてるへの送信に失敗しました。処理を終了します", e);
             return;

@@ -42,17 +42,21 @@ public class ScheduledTurnDailyNote {
     private final MessageRepository messageRepository;
     private final HistoryMessageBuilder historyMessageBuilder;
     private final ChatClient chatClient;
+    private final ScheduledReflectOn scheduledReflectOn;
 
     public ScheduledTurnDailyNote(
             VaultRepository vaultRepository,
             SystemMessageBuilder systemMessageBuilder,
-            MessageRepository messageRepository, HistoryMessageBuilder historyMessageBuilder,
-            ChatClient.Builder chatClientBuilder) {
+            MessageRepository messageRepository,
+            HistoryMessageBuilder historyMessageBuilder,
+            ChatClient.Builder chatClientBuilder,
+            ScheduledReflectOn scheduledReflectOn) {
         this.vaultRepository = vaultRepository;
         this.systemMessageBuilder = systemMessageBuilder;
         this.messageRepository = messageRepository;
         this.historyMessageBuilder = historyMessageBuilder;
         this.chatClient = chatClientBuilder.build();
+        this.scheduledReflectOn = scheduledReflectOn;
     }
 
     // ロガー
@@ -167,6 +171,13 @@ public class ScheduledTurnDailyNote {
             log.error("最新のデイリーノートの書き込みに失敗しました：{}", filename, e);
             log.info("処理を終了します");
             return;
+        }
+
+        // 振り返りを行う
+        try {
+            scheduledReflectOn.reflectOn();
+        } catch (Exception e) {
+            log.error("振り返りの時間に失敗しました", e);
         }
 
     }

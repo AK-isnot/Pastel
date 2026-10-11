@@ -101,7 +101,7 @@ public class ScheduledReflectOn {
             最後に、やったことを日記のように出力しましょう。
             """;;
 
-    @Scheduled(initialDelay = 1, fixedRate = 3, timeUnit = TimeUnit.HOURS)
+    @Scheduled(initialDelay = 3, fixedRate = 3, timeUnit = TimeUnit.HOURS)
     public void reflectOn() {
         log.info("自由時間：振り返りを開始します");
 
