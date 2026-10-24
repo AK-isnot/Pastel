@@ -33,6 +33,7 @@ import com.akisnot.pastel.DTO.Messages;
 import com.akisnot.pastel.Repository.MessageRepository;
 import com.akisnot.pastel.Tool.EditMemoryNote;
 import com.akisnot.pastel.Tool.TalkToOwner;
+import com.akisnot.pastel.Tool.WriteMemoryNote;
 import com.github.f4b6a3.ulid.Ulid;
 
 @Configuration
@@ -50,12 +51,14 @@ public class ScheduledTalkToOwner {
             MessageRepository messageRepository,
             SystemMessageBuilder systemMessageBuilder,
             HistoryMessageBuilder historyMessageBuilder,
-            EditMemoryNote editMemoryNote) {
+            EditMemoryNote editMemoryNote,
+            WriteMemoryNote writeMemoryNote) {
         this.chatClient = chatClientBuilder
                 // @toolの設定
                 .defaultTools(
                         talkToOwner,
-                        editMemoryNote)
+                        editMemoryNote,
+                        writeMemoryNote)
                 // キャッシュの設定
                 .defaultOptions(
                         AnthropicChatOptions

@@ -168,8 +168,6 @@ public class VaultRepository {
             return "";
         }
 
-        log.info("デイリーノートを読みました：{}", filename);
-
         // 返却
         return content;
 
