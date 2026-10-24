@@ -89,6 +89,11 @@ public class ScheduledTalkToOwner {
         // 前回の会話からどれだけ時間が経ったかを算出する。
         // その結果、10分以内に会話が行われていた場合には何もせずに返却する
         List<Messages> messages = messageRepository.getRecentHistory(1);
+        // まだ一度も会話していない場合は、話しかけずに終わる
+        if (messages.isEmpty()) {
+            log.info("まだ会話の履歴がないため処理を終了します");
+            return;
+        }
         Ulid ulid = Ulid.from(messages.getFirst().messageId());
         // 現在時刻との差を出す
         Duration diff = Duration.between(ulid.getInstant(), Instant.now());
@@ -125,7 +130,8 @@ public class ScheduledTalkToOwner {
         // 送信
         ChatResponse response;
         try {
-            response = chatClient.prompt(new Prompt(systemPrompt)).user(order).toolContext(Map.of("queries", new ArrayList<>())).call().chatResponse();
+            response = chatClient.prompt(new Prompt(systemPrompt)).user(order)
+                    .toolContext(Map.of("queries", new ArrayList<>())).call().chatResponse();
         } catch (Exception e) {
             log.error("ぱすてるへの送信に失敗しました。処理を終了します", e);
             return;

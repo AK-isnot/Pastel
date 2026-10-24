@@ -114,13 +114,14 @@ public class ChatService {
         List<Messages> history = getHistory(20);
 
         // 前回の会話からどれだけの時間が経ったのか計算してプロンプトに含める
-        // 最後の会話時間をUlidから計算するために、履歴から取得する
-        String lastMessageUlidString = history.getLast().messageId();
+
         // 初回は前回の会話の時間が存在しないので分岐する
         String statusText;
-        if (lastMessageUlidString.isEmpty()) {
+        if (history.isEmpty()) {
             statusText = "これが初めての起動です\n";
         } else {
+            // 最後の会話時間をUlidから計算するために、履歴から取得する
+            String lastMessageUlidString = history.getLast().messageId();
             Ulid lastMessageUlid = Ulid.from(lastMessageUlidString);
             Instant lastMessageTime = lastMessageUlid.getInstant();
             // 今回の時間と前回の時間で引き算をして、どれだけ時間が経ったか計算する

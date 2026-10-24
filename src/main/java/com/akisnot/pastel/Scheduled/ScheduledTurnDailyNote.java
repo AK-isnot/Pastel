@@ -110,7 +110,13 @@ public class ScheduledTurnDailyNote {
 
         // 今日以前で最新のデイリーノートのファイル名を取得する
         if (sortedDailyNoteList.isEmpty()) {
-            log.error("デイリーノートが一つもありません");
+            // 前のノートがない（最初の一日）ので、空のノートだけ作って終わる
+            try {
+                vaultRepository.writeDailyNote(localDate, Path.of(pastelDailyNoteDir), "");
+                log.info("最初のデイリーノートを作りました：{}", filename);
+            } catch (IOException e) {
+                log.error("最初のデイリーノートの作成に失敗しました：{}", filename, e);
+            }
             log.info("処理を終了します");
             return;
         }
